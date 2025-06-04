@@ -7,11 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
 const chartData = [
-    { browser: 'chrome', visitors: 275, fill: 'hsl(var(--chart-1))' },
-    { browser: 'safari', visitors: 200, fill: 'hsl(var(--chart-2))' },
-    { browser: 'firefox', visitors: 287, fill: 'hsl(var(--chart-3))' },
-    { browser: 'edge', visitors: 173, fill: 'hsl(var(--chart-4))' },
-    { browser: 'other', visitors: 190, fill: 'hsl(var(--chart-5))' }
+    { browser: 'chrome', visitors: 275, fill: 'var(--chart-1)' },
+    { browser: 'safari', visitors: 200, fill: 'var(--chart-2)' },
+    { browser: 'firefox', visitors: 287, fill: 'var(--chart-3)' },
+    { browser: 'edge', visitors: 173, fill: 'var(--chart-4)' },
+    { browser: 'other', visitors: 190, fill: 'var(--chart-5)' }
 ];
 
 const chartConfig = {
@@ -20,23 +20,23 @@ const chartConfig = {
     },
     chrome: {
         label: 'Chrome',
-        color: 'hsl(var(--chart-1))'
+        color: 'var(--chart-1)'
     },
     safari: {
         label: 'Safari',
-        color: 'hsl(var(--chart-2))'
+        color: 'var(--chart-2)'
     },
     firefox: {
         label: 'Firefox',
-        color: 'hsl(var(--chart-3))'
+        color: 'var(--chart-3)'
     },
     edge: {
         label: 'Edge',
-        color: 'hsl(var(--chart-4))'
+        color: 'var(--chart-4)'
     },
     other: {
         label: 'Other',
-        color: 'hsl(var(--chart-5))'
+        color: 'var(--chart-5)'
     }
 } satisfies ChartConfig;
 
