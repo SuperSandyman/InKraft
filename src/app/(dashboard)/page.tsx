@@ -11,6 +11,8 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import GitHubHeatmap from '@/components/dashboard/github-heatmap';
+import HackerNewsCard from '@/components/dashboard/hackernews';
+import RecentArticles from '@/components/dashboard/recent-articles';
 
 export default function Page() {
     return (
@@ -42,9 +44,13 @@ export default function Page() {
                         <div className="bg-muted/50 aspect-video rounded-xl">
                             <ChartPieDonutText />
                         </div>
-                        <div className="bg-muted/50 aspect-video rounded-xl"></div>
+                        <div className="bg-muted/50 aspect-video rounded-xl">
+                            <HackerNewsCard />
+                        </div>
                     </div>
-                    <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
+                    <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min">
+                        <RecentArticles />
+                    </div>
                 </div>
             </SidebarInset>
         </SidebarProvider>

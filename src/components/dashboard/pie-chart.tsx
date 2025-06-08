@@ -50,19 +50,23 @@ export function ChartPieDonutText() {
             <CardHeader>
                 <CardTitle className="text-lg font-semibold">コンテンツ分布</CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col justify-center p-4">
-                <div className="w-full flex-1 flex items-center justify-center">
-                    <ChartContainer config={chartConfig} className="aspect-square w-full max-w-[180px]">
+            <CardContent className="flex-1 flex items-center justify-center min-h-0 min-w-0">
+                {/* チャート中央寄せ＆サイズ拡大 */}
+                <div className="flex-none flex items-center justify-center min-w-0 min-h-0">
+                    <ChartContainer
+                        config={chartConfig}
+                        className="aspect-square w-full min-w-[240px] max-w-[240px] min-h-[240px] max-h-[240px] flex items-center justify-center"
+                    >
                         <PieChart>
                             <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
                             <Pie
                                 data={chartData}
                                 dataKey="visitors"
                                 nameKey="browser"
-                                innerRadius={60}
-                                outerRadius={80}
+                                innerRadius={52}
+                                outerRadius={85}
                                 cx="50%"
-                                cy="50%"
+                                cy="42%"
                                 strokeWidth={5}
                             >
                                 {chartData.map((entry) => (
@@ -72,23 +76,24 @@ export function ChartPieDonutText() {
                                     position="center"
                                     content={({ viewBox }) => {
                                         if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
+                                            const cy = typeof viewBox.cy === 'number' ? viewBox.cy : 60;
                                             return (
                                                 <text
                                                     x={viewBox.cx}
-                                                    y={viewBox.cy}
+                                                    y={cy - 4}
                                                     textAnchor="middle"
                                                     dominantBaseline="middle"
                                                 >
                                                     <tspan
                                                         x={viewBox.cx}
-                                                        y={viewBox.cy}
-                                                        className="fill-foreground text-2xl font-bold"
+                                                        y={cy - 4}
+                                                        className="fill-foreground text-xl font-bold"
                                                     >
                                                         {totalVisitors.toLocaleString()}
                                                     </tspan>
                                                     <tspan
                                                         x={viewBox.cx}
-                                                        y={(viewBox.cy || 0) + 18}
+                                                        y={cy + 12}
                                                         className="fill-muted-foreground text-xs"
                                                     >
                                                         Visitors
