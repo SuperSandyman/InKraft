@@ -30,7 +30,7 @@ const HackerNewsCard: React.FC = () => {
     return (
         <Card className="h-full flex flex-col">
             <CardHeader>
-                <CardTitle className="text-lg font-semibold">ニュース</CardTitle>
+                <CardTitle className="text-lg font-semibold">ニュース（HackerNewsより）</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col pt-2 gap-2 justify-start">
                 <ul className="flex flex-col gap-3">

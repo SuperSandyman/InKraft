@@ -4,146 +4,122 @@ import * as React from 'react';
 import {
     AudioWaveform,
     BookOpen,
-    Bot,
     Command,
-    Frame,
     GalleryVerticalEnd,
-    Map,
-    PieChart,
+    MessageSquare,
     Settings2,
-    SquareTerminal
+    Users,
+    LogOut
 } from 'lucide-react';
 
 import { NavMain } from '@/components/sidebar/nav-main';
-import { NavProjects } from '@/components/sidebar/nav-projects';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail } from '@/components/ui/sidebar';
 
 // This is sample data.
 const data = {
     user: {
-        name: 'shadcn',
-        email: 'm@example.com',
+        name: 'Admin User',
+        email: 'admin@cms.local',
         avatar: '/avatars/shadcn.jpg'
     },
     teams: [
         {
-            name: 'Acme Inc',
+            name: 'CMS管理',
             logo: GalleryVerticalEnd,
             plan: 'Enterprise'
         },
         {
-            name: 'Acme Corp.',
+            name: '記事編集',
             logo: AudioWaveform,
-            plan: 'Startup'
+            plan: 'Professional'
         },
         {
-            name: 'Evil Corp.',
+            name: 'コンテンツ',
             logo: Command,
-            plan: 'Free'
+            plan: 'Standard'
         }
     ],
     navMain: [
         {
-            title: 'Playground',
-            url: '#',
-            icon: SquareTerminal,
+            title: '記事一覧',
+            url: '/articles',
+            icon: BookOpen,
             isActive: true,
             items: [
                 {
-                    title: 'History',
-                    url: '#'
+                    title: '公開中',
+                    url: '/articles/published'
                 },
                 {
-                    title: 'Starred',
-                    url: '#'
+                    title: '下書き',
+                    url: '/articles/drafts'
                 },
                 {
-                    title: 'Settings',
-                    url: '#'
+                    title: '新規作成',
+                    url: '/articles/new'
                 }
             ]
         },
         {
-            title: 'Models',
-            url: '#',
-            icon: Bot,
+            title: 'ユーザー',
+            url: '/users',
+            icon: Users,
             items: [
                 {
-                    title: 'Genesis',
-                    url: '#'
+                    title: '管理者',
+                    url: '/users/admins'
                 },
                 {
-                    title: 'Explorer',
-                    url: '#'
+                    title: '編集者',
+                    url: '/users/editors'
                 },
                 {
-                    title: 'Quantum',
-                    url: '#'
+                    title: '閲覧者',
+                    url: '/users/viewers'
                 }
             ]
         },
         {
-            title: 'Documentation',
-            url: '#',
-            icon: BookOpen,
+            title: 'AIチャット',
+            url: '/chat',
+            icon: MessageSquare,
             items: [
                 {
-                    title: 'Introduction',
-                    url: '#'
+                    title: '記事作成支援',
+                    url: '/chat/writing'
                 },
                 {
-                    title: 'Get Started',
-                    url: '#'
+                    title: '校正・推敲',
+                    url: '/chat/editing'
                 },
                 {
-                    title: 'Tutorials',
-                    url: '#'
-                },
-                {
-                    title: 'Changelog',
-                    url: '#'
+                    title: 'SEO最適化',
+                    url: '/chat/seo'
                 }
             ]
         },
         {
-            title: 'Settings',
-            url: '#',
+            title: '設定',
+            url: '/settings',
             icon: Settings2,
             items: [
                 {
-                    title: 'General',
-                    url: '#'
+                    title: '一般設定',
+                    url: '/settings/general'
                 },
                 {
-                    title: 'Team',
-                    url: '#'
+                    title: 'GitHub連携',
+                    url: '/settings/github'
                 },
                 {
-                    title: 'Billing',
-                    url: '#'
+                    title: 'テーマ設定',
+                    url: '/settings/theme'
                 },
                 {
-                    title: 'Limits',
-                    url: '#'
+                    title: 'ユーザー管理',
+                    url: '/settings/users'
                 }
             ]
-        }
-    ],
-    projects: [
-        {
-            name: 'Design Engineering',
-            url: '#',
-            icon: Frame
-        },
-        {
-            name: 'Sales & Marketing',
-            url: '#',
-            icon: PieChart
-        },
-        {
-            name: 'Travel',
-            url: '#',
-            icon: Map
         }
     ]
 };
@@ -166,9 +142,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarHeader>
             <SidebarContent>
                 <NavMain items={data.navMain} />
-                <NavProjects projects={data.projects} />
             </SidebarContent>
-            <SidebarFooter />
+            <SidebarFooter>
+                <form action="/api/auth/signout" method="post" className="w-full">
+                    <button
+                        type="submit"
+                        className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        <span>ログアウト</span>
+                    </button>
+                </form>
+            </SidebarFooter>
             <SidebarRail />
         </Sidebar>
     );
