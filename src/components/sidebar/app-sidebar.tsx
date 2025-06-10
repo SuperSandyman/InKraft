@@ -42,21 +42,21 @@ const data = {
     navMain: [
         {
             title: '記事一覧',
-            url: '/articles',
+            url: '/contents',
             icon: BookOpen,
             isActive: true,
             items: [
                 {
                     title: '公開中',
-                    url: '/articles/published'
+                    url: '/contents?status=published'
                 },
                 {
                     title: '下書き',
-                    url: '/articles/drafts'
+                    url: '/contents?status=draft'
                 },
                 {
                     title: '新規作成',
-                    url: '/articles/new'
+                    url: '/contents/new'
                 }
             ]
         },
