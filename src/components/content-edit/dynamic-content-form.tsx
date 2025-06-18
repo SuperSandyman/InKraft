@@ -14,17 +14,21 @@ interface DynamicContentFormProps {
     schema?: FrontmatterSchema;
     onSubmit: (data: FrontmatterData) => void;
     isSubmitting?: boolean;
+    initialValues?: FrontmatterData;
 }
 
 const DynamicContentForm = ({
     schema = defaultFrontmatterSchema,
     onSubmit,
-    isSubmitting = false
+    isSubmitting = false,
+    initialValues
 }: DynamicContentFormProps) => {
     const [formData, setFormData] = useState<FrontmatterData>(() => {
         const initialData: FrontmatterData = {};
         schema.fields.forEach((field) => {
-            if (field.multiple) {
+            if (initialValues && initialValues[field.name] !== undefined) {
+                initialData[field.name] = initialValues[field.name];
+            } else if (field.multiple) {
                 initialData[field.name] = [];
             } else if (field.type === 'boolean') {
                 initialData[field.name] = false;
@@ -40,7 +44,9 @@ const DynamicContentForm = ({
     useEffect(() => {
         const initialData: FrontmatterData = {};
         schema.fields.forEach((field) => {
-            if (field.multiple) {
+            if (initialValues && initialValues[field.name] !== undefined) {
+                initialData[field.name] = initialValues[field.name];
+            } else if (field.multiple) {
                 initialData[field.name] = [];
             } else if (field.type === 'boolean') {
                 initialData[field.name] = false;
@@ -49,7 +55,7 @@ const DynamicContentForm = ({
             }
         });
         setFormData(initialData);
-    }, [schema]);
+    }, [schema, initialValues]);
 
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {};

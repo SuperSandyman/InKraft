@@ -67,9 +67,11 @@ const ContentsTable = ({ contents }: ContentsTableProps) => (
                         <td className="py-3 px-4 text-sm">{formatDate(content.updatedAt)}</td>
                         <td className="py-3 px-4">
                             <div className="flex gap-2">
-                                <Button variant="outline" size="sm">
-                                    編集
-                                </Button>
+                                <a href={`/contents/${content.slug}/edit`}>
+                                    <Button variant="outline" size="sm">
+                                        編集
+                                    </Button>
+                                </a>
                                 <Button variant="outline" size="sm">
                                     削除
                                 </Button>
