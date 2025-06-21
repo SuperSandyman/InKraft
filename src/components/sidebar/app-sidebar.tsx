@@ -1,16 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import {
-    AudioWaveform,
-    BookOpen,
-    Command,
-    GalleryVerticalEnd,
-    MessageSquare,
-    Settings2,
-    Users,
-    LogOut
-} from 'lucide-react';
+import { AudioWaveform, BookOpen, Command, GalleryVerticalEnd, Settings2, Users, LogOut } from 'lucide-react';
 
 import { NavMain } from '@/components/sidebar/nav-main';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail } from '@/components/ui/sidebar';
@@ -76,25 +67,6 @@ const data = {
                 {
                     title: '閲覧者',
                     url: '/users/viewers'
-                }
-            ]
-        },
-        {
-            title: 'AIチャット',
-            url: '/chat',
-            icon: MessageSquare,
-            items: [
-                {
-                    title: '記事作成支援',
-                    url: '/chat/writing'
-                },
-                {
-                    title: '校正・推敲',
-                    url: '/chat/editing'
-                },
-                {
-                    title: 'SEO最適化',
-                    url: '/chat/seo'
                 }
             ]
         },
