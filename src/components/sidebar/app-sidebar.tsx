@@ -1,10 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { AudioWaveform, BookOpen, Command, GalleryVerticalEnd, Settings2, Users, LogOut } from 'lucide-react';
+import { AudioWaveform, BookOpen, Command, GalleryVerticalEnd, Settings2, LogOut } from 'lucide-react';
 
 import { NavMain } from '@/components/sidebar/nav-main';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail } from '@/components/ui/sidebar';
+import { logoutAction } from '@/app/actions/logout';
 
 // This is sample data.
 const data = {
@@ -48,25 +49,6 @@ const data = {
                 {
                     title: '新規作成',
                     url: '/contents/new'
-                }
-            ]
-        },
-        {
-            title: 'ユーザー',
-            url: '/users',
-            icon: Users,
-            items: [
-                {
-                    title: '管理者',
-                    url: '/users/admins'
-                },
-                {
-                    title: '編集者',
-                    url: '/users/editors'
-                },
-                {
-                    title: '閲覧者',
-                    url: '/users/viewers'
                 }
             ]
         },
@@ -116,7 +98,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <NavMain items={data.navMain} />
             </SidebarContent>
             <SidebarFooter>
-                <form action="/api/auth/signout" method="post" className="w-full">
+                <form action={logoutAction} className="w-full">
                     <button
                         type="submit"
                         className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"

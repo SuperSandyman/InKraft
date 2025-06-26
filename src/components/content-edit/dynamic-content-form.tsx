@@ -108,7 +108,7 @@ const DynamicContentForm = ({
         }
     };
 
-    const renderField = (field: FrontmatterField) => {
+    const renderField = (field: FrontmatterField, index: number) => {
         const commonProps = {
             id: field.name,
             label: field.label,
@@ -120,7 +120,7 @@ const DynamicContentForm = ({
         if (field.type === 'string' && field.multiple) {
             return (
                 <TagsField
-                    key={field.name}
+                    key={`${field.name}-${index}`}
                     {...commonProps}
                     value={Array.isArray(formData[field.name]) ? (formData[field.name] as string[]) : []}
                     onChange={(value) => handleFieldChange(field.name, value)}
@@ -131,7 +131,7 @@ const DynamicContentForm = ({
         if (field.type === 'string' && !field.multiple) {
             return (
                 <StringField
-                    key={field.name}
+                    key={`${field.name}-${index}`}
                     {...commonProps}
                     value={typeof formData[field.name] === 'string' ? (formData[field.name] as string) : ''}
                     onChange={(value) => handleFieldChange(field.name, value)}
@@ -143,7 +143,7 @@ const DynamicContentForm = ({
         if (field.type === 'date') {
             return (
                 <DateField
-                    key={field.name}
+                    key={`${field.name}-${index}`}
                     {...commonProps}
                     value={typeof formData[field.name] === 'string' ? (formData[field.name] as string) : ''}
                     onChange={(value) => handleFieldChange(field.name, value)}
@@ -155,7 +155,7 @@ const DynamicContentForm = ({
         if (field.type === 'boolean') {
             return (
                 <BooleanField
-                    key={field.name}
+                    key={`${field.name}-${index}`}
                     {...commonProps}
                     value={typeof formData[field.name] === 'boolean' ? (formData[field.name] as boolean) : false}
                     onChange={(value) => handleFieldChange(field.name, value)}
