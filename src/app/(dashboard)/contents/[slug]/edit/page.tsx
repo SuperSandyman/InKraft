@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 
 import type { FrontmatterSchema } from '@/types/frontmatter';
 import ContentEditClient from './content-edit-client';
+import { fetchAllContentsFromGitHub } from '@/lib/content';
 
 interface PageProps {
     params: { slug: string };
@@ -15,8 +16,8 @@ export default async function ContentEditPage({ params }: PageProps) {
         notFound();
     }
 
-    // frontmatter.scheme.example.json をサーバーサイドで読み込む
-    const schemaPath = path.join(process.cwd(), 'frontmatter.scheme.example.json');
+    // スキーマ読み込み
+    const schemaPath = path.join(process.cwd(), 'frontmatter.scheme.json');
     const schema: FrontmatterSchema = { fields: [] };
     try {
         const json = fs.readFileSync(schemaPath, 'utf-8');
@@ -24,9 +25,16 @@ export default async function ContentEditPage({ params }: PageProps) {
         const arr = JSON.parse(cleaned);
         schema.fields = arr;
     } catch (e) {
-        console.error('frontmatter.scheme.example.json の読み込みに失敗:', e);
+        console.error('frontmatter.scheme.json の読み込みに失敗:', e);
         notFound();
     }
 
-    return <ContentEditClient schema={schema} slug={slug} />;
+    // 記事データ取得
+    const allContents = await fetchAllContentsFromGitHub();
+    const article = allContents.find((c) => c.slug === slug);
+    if (!article) {
+        notFound();
+    }
+
+    return <ContentEditClient schema={schema} article={article} />;
 }

@@ -1,0 +1,24 @@
+{
+    "targetRepository": "SuperSandyman/sandyman.dev-content",
+    "draftDirectory": "draft",
+    "content": [
+        {
+            "directory": "posts",
+            "articleFile": "index.md",
+            "imageDirInsideContent": true,
+            "metaCache": {
+                "type": "json",
+                "path": "posts/index.json"
+            }
+        },
+        {
+            "directory": "scraps",
+            "articleFile": "index.md",
+            "imageDirInsideContent": true,
+            "metaCache": {
+                "type": "json",
+                "path": "scraps/index.json"
+            }
+        }
+    ]
+}

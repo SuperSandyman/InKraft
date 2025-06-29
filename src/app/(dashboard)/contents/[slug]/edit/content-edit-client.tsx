@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import type { FrontmatterSchema, FrontmatterData } from '@/types/frontmatter';
 import MdEditor from '@/components/content-edit/md-editor';
 import DynamicContentForm from '@/components/content-edit/dynamic-content-form';
-import { mockContents } from '@/lib/content';
+import type { Content } from '@/lib/content';
+
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -20,30 +21,32 @@ import {
 
 interface ContentEditClientProps {
     schema: FrontmatterSchema;
-    slug: string;
+    article: Content;
 }
 
-const ContentEditClient = ({ schema, slug }: ContentEditClientProps) => {
+const ContentEditClient = ({ schema, article }: ContentEditClientProps) => {
     const router = useRouter();
-    const [content, setContent] = useState<string>('');
-    const [meta, setMeta] = useState<FrontmatterData>({});
+    const [content, setContent] = useState<string>(() => {
+        const title = typeof article.title === 'string' ? article.title : '';
+        return `# ${title}\n\n${article.excerpt}`;
+    });
+    const [meta] = useState<FrontmatterData>(() => {
+        const meta: FrontmatterData = {};
+        schema.fields.forEach((field) => {
+            const fieldValue = article[field.name];
+            if (fieldValue !== undefined && fieldValue !== null) {
+                if (typeof fieldValue === 'string' || typeof fieldValue === 'boolean' || Array.isArray(fieldValue)) {
+                    meta[field.name] = fieldValue;
+                } else {
+                    meta[field.name] = '';
+                }
+            } else {
+                meta[field.name] = '';
+            }
+        });
+        return meta;
+    });
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-    const [isLoaded, setIsLoaded] = useState<boolean>(false);
-
-    useEffect(() => {
-        // ダミーデータから記事取得
-        const article = mockContents.find((c) => c.slug === slug);
-        if (article) {
-            setContent(`# ${article.title}\n\n${article.excerpt}`);
-            setMeta({
-                title: article.title,
-                tags: article.tags,
-                date: article.publishedAt ? article.publishedAt.split('T')[0].replace(/-/g, '/') : '',
-                draft: article.status === 'draft'
-            });
-        }
-        setIsLoaded(true);
-    }, [slug]);
 
     const handleFormSubmit = async (formData: FrontmatterData) => {
         setIsSubmitting(true);
@@ -59,10 +62,6 @@ const ContentEditClient = ({ schema, slug }: ContentEditClientProps) => {
             setIsSubmitting(false);
         }
     };
-
-    if (!isLoaded) {
-        return <div>読み込み中...</div>;
-    }
 
     return (
         <>
@@ -81,7 +80,9 @@ const ContentEditClient = ({ schema, slug }: ContentEditClientProps) => {
                             </BreadcrumbItem>
                             <BreadcrumbSeparator />
                             <BreadcrumbItem>
-                                <BreadcrumbLink href="#">{meta.title || '...'}</BreadcrumbLink>
+                                <BreadcrumbLink href="#">
+                                    {typeof meta.title === 'string' ? meta.title : '...'}
+                                </BreadcrumbLink>
                             </BreadcrumbItem>
                             <BreadcrumbSeparator />
                             <BreadcrumbItem>

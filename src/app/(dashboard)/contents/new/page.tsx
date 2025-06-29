@@ -7,8 +7,8 @@ import ContentNewClient from './content-new-client';
 import type { FrontmatterSchema } from '@/types/frontmatter';
 
 export default async function ContentNewPage() {
-    // frontmatter.scheme.example.json をサーバーサイドで読み込む
-    const schemaPath = path.join(process.cwd(), 'frontmatter.scheme.example.json');
+    // frontmatter.scheme.json をサーバーサイドで読み込む
+    const schemaPath = path.join(process.cwd(), 'frontmatter.scheme.json');
     const schema: FrontmatterSchema = { fields: [] };
     try {
         const json = fs.readFileSync(schemaPath, 'utf-8');
@@ -17,7 +17,7 @@ export default async function ContentNewPage() {
         const arr = JSON.parse(cleaned);
         schema.fields = arr;
     } catch (e) {
-        console.error('frontmatter.scheme.example.json の読み込みに失敗:', e);
+        console.error('frontmatter.scheme.json の読み込みに失敗:', e);
         notFound();
     }
 

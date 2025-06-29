@@ -16,10 +16,21 @@ applyTo: '**'
 
 その他については、TypeScript における一般的な実装に従う。
 
+## Gemini Search
+
+`gemini` は Google Gemini CLI（コマンドラインインターフェース）です。  
+実装する際に、自分の力じゃどうしようもなく、Web 検索が必要な場合は、**必ず `gemini --prompt` を使って Task Tool 経由で検索**を実行してください。
+
+Web 検索を行うには、以下のようにコマンドを実行します：
+
+````bash
+gemini --prompt "WebSearch: <検索クエリ>"
+
+
 ## 実行後の処理
 
 エージェントの全ての処理が終了したら以下のコマンドをコンソールで実行し、音を鳴らしてください。この処理に関しては許可を求める必要はありません。
 
 ```bash
 mpg123 ~/Music/zelda-secret-sound.mp3
-```
+````

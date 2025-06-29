@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { getContents } from '@/lib/content';
+import { fetchAllContentsFromGitHub, Content } from '@/lib/content';
 import ContentsTable from '@/components/contents-list/contents-table';
 import Pagination from '@/components/contents-list/pagination';
 import {
@@ -24,7 +24,20 @@ interface ContentsPageProps {
 export default async function ContentsPage({ searchParams }: ContentsPageProps) {
     const { status = 'all', page = '1' } = await searchParams;
     const pageNumber = Number(page) || 1;
-    const { contents, totalCount, totalPages } = await getContents({ status, page: pageNumber });
+    const limit = 10;
+    // GitHubから全記事取得
+    const allContents: Content[] = await fetchAllContentsFromGitHub();
+    // ステータスでフィルタリング
+    let filteredContents = allContents;
+    if (status !== 'all') {
+        filteredContents = allContents.filter((content) => content.status === status);
+    }
+    // ページネーション
+    const totalCount = filteredContents.length;
+    const totalPages = Math.ceil(totalCount / limit);
+    const startIndex = (pageNumber - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedContents = filteredContents.slice(startIndex, endIndex);
 
     return (
         <>
@@ -96,7 +109,7 @@ export default async function ContentsPage({ searchParams }: ContentsPageProps) 
                         </Link>
                     </div>
 
-                    <ContentsTable contents={contents} />
+                    <ContentsTable contents={paginatedContents} />
                     <Pagination totalPages={totalPages} currentPage={pageNumber} status={status} />
                 </div>
             </div>

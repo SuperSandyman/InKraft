@@ -2,5 +2,12 @@
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "chat.tools.autoApprove": true,
-    "chat.agent.maxRequests": 999
+    "chat.agent.maxRequests": 999,
+    "mcp": {
+        "servers": {
+            "my-mcp-server-7aa2ceb4": {
+                "url": "https://mcp.context7.com/mcp"
+            }
+        }
+    }
 }
