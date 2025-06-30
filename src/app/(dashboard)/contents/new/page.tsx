@@ -21,5 +21,28 @@ export default async function ContentNewPage() {
         notFound();
     }
 
-    return <ContentNewClient schema={schema} />;
+    // cms.config.json から directory 一覧を取得
+    interface ContentConfigItem {
+        directory: string;
+        articleFile: string;
+        imageDirInsideContent: boolean;
+        metaCache: {
+            type: string;
+            path: string;
+        };
+    }
+
+    const configPath = path.join(process.cwd(), 'cms.config.json');
+    let directories: string[] = [];
+    try {
+        const configJson = fs.readFileSync(configPath, 'utf-8');
+        const config = JSON.parse(configJson);
+        directories = Array.isArray(config.content)
+            ? (config.content as ContentConfigItem[]).map((c) => c.directory)
+            : [];
+    } catch (e) {
+        console.error('cms.config.json の読み込みに失敗:', e);
+    }
+
+    return <ContentNewClient schema={schema} directories={directories} />;
 }

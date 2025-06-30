@@ -10,8 +10,9 @@ interface PageProps {
     params: { slug: string };
 }
 
-export default async function ContentEditPage({ params }: PageProps) {
-    const { slug } = params;
+export default async function ContentEditPage(props: PageProps) {
+    const { params } = props;
+    const { slug } = await params;
     if (!slug) {
         notFound();
     }

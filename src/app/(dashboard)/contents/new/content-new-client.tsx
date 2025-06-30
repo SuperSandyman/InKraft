@@ -21,9 +21,10 @@ import {
 
 interface ContentNewClientProps {
     schema: FrontmatterSchema;
+    directories?: string[];
 }
 
-const ContentNewClient = ({ schema }: ContentNewClientProps) => {
+const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) => {
     const router = useRouter();
     const [content, setContent] = useState<string>('# 新しい記事\n\nここに記事の内容を書いてください...');
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -124,6 +125,7 @@ const ContentNewClient = ({ schema }: ContentNewClientProps) => {
                                 schema={schema}
                                 onSubmit={handleFormSubmit}
                                 isSubmitting={isSubmitting}
+                                directories={directories}
                             />
                         </div>
                         {/* PC: エディタ左/ モバイル: 下 */}
@@ -164,6 +166,7 @@ const ContentNewClient = ({ schema }: ContentNewClientProps) => {
                                 schema={schema}
                                 onSubmit={handleFormSubmit}
                                 isSubmitting={isSubmitting}
+                                directories={directories}
                             />
                         </div>
                     </div>

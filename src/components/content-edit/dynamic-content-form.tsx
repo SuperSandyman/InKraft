@@ -12,16 +12,18 @@ import { defaultFrontmatterSchema } from '@/types/frontmatter';
 
 interface DynamicContentFormProps {
     schema?: FrontmatterSchema;
-    onSubmit: (data: FrontmatterData) => void;
+    onSubmit: (data: FrontmatterData & { directory: string }) => void;
     isSubmitting?: boolean;
     initialValues?: FrontmatterData;
+    directories?: string[];
 }
 
 const DynamicContentForm = ({
     schema = defaultFrontmatterSchema,
     onSubmit,
     isSubmitting = false,
-    initialValues
+    initialValues,
+    directories = []
 }: DynamicContentFormProps) => {
     const [formData, setFormData] = useState<FrontmatterData>(() => {
         const initialData: FrontmatterData = {};
@@ -39,6 +41,7 @@ const DynamicContentForm = ({
         return initialData;
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [selectedDirectory, setSelectedDirectory] = useState<string>(directories[0] || '');
 
     // フォームデータの初期化
     useEffect(() => {
@@ -88,7 +91,7 @@ const DynamicContentForm = ({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (validateForm()) {
-            onSubmit(formData);
+            onSubmit({ ...formData, directory: selectedDirectory });
         }
     };
 
@@ -173,6 +176,25 @@ const DynamicContentForm = ({
             </CardHeader>
             <CardContent className="space-y-6">
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {directories.length > 1 && (
+                        <div>
+                            <label htmlFor="directory" className="block text-sm font-medium mb-1">
+                                投稿先ディレクトリ
+                            </label>
+                            <select
+                                id="directory"
+                                value={selectedDirectory}
+                                onChange={(e) => setSelectedDirectory(e.target.value)}
+                                className="w-full border rounded px-2 py-1"
+                            >
+                                {directories.map((dir) => (
+                                    <option key={dir} value={dir}>
+                                        {dir}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                     {schema.fields.map(renderField)}
 
                     <div className="flex gap-2 pt-4">
