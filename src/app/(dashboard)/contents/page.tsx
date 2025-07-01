@@ -27,10 +27,12 @@ export default async function ContentsPage({ searchParams }: ContentsPageProps) 
     const limit = 10;
     // GitHubから全記事取得
     const allContents: Content[] = await fetchAllContentsFromGitHub();
-    // ステータスでフィルタリング
+    // ステータスでフィルタリング（frontmatter の draft フィールドを使用）
     let filteredContents = allContents;
-    if (status !== 'all') {
-        filteredContents = allContents.filter((content) => content.status === status);
+    if (status === 'published') {
+        filteredContents = allContents.filter((content) => content.draft !== true);
+    } else if (status === 'draft') {
+        filteredContents = allContents.filter((content) => content.draft === true);
     }
     // ページネーション
     const totalCount = filteredContents.length;

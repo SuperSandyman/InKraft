@@ -31,14 +31,5 @@
         "multiple": false,
         "required": true,
         "description": "記事の公開日を指定します。"
-    },
-    {
-        "name": "updateDate",
-        "label": "更新日",
-        "type": "date",
-        "format": "yyyy/MM/dd",
-        "multiple": false,
-        "required": false,
-        "description": "記事の更新日を指定します。"
     }
 ]
