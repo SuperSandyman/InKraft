@@ -161,6 +161,50 @@ const fetchContentsFromDirectory = async (
     return contents;
 };
 
+// 特定のslugの記事の詳細情報（本文全体 + frontmatter）を取得
+export const fetchContentBySlug = async (
+    slug: string
+): Promise<{
+    frontmatter: Record<string, unknown>;
+    content: string;
+    directory: string;
+} | null> => {
+    const config = await getCmsConfig();
+    const [owner, repo] = config.targetRepository.split('/');
+    const branch = config.branch || 'main';
+    const octokit = await getOctokitWithAuth();
+
+    // 全てのcontent typeでslugを検索
+    for (const contentType of config.content) {
+        const { directory, articleFile } = contentType;
+
+        try {
+            const { data: file } = await octokit.repos.getContent({
+                owner,
+                repo,
+                path: `${directory}/${slug}/${articleFile}`,
+                ref: branch
+            });
+
+            if ('content' in file && file.content) {
+                const md = Buffer.from(file.content, 'base64').toString('utf-8');
+                const { data: frontmatter, content } = matter(md);
+
+                return {
+                    frontmatter,
+                    content,
+                    directory
+                };
+            }
+        } catch {
+            // このディレクトリには存在しない、次のディレクトリを確認
+            continue;
+        }
+    }
+
+    return null; // 見つからなかった場合
+};
+
 export const fetchAllContentsFromGitHub = async (): Promise<Content[]> => {
     const config = await getCmsConfig();
     const [owner, repo] = config.targetRepository.split('/');

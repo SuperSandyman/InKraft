@@ -22,11 +22,16 @@ import {
 interface ContentEditClientProps {
     schema: FrontmatterSchema;
     article: Content;
+    fullContent?: string;
 }
 
-const ContentEditClient = ({ schema, article }: ContentEditClientProps) => {
+const ContentEditClient = ({ schema, article, fullContent }: ContentEditClientProps) => {
     const router = useRouter();
     const [content, setContent] = useState<string>(() => {
+        // fullContentが提供されている場合はそれを使用、そうでなければfallback
+        if (fullContent) {
+            return fullContent;
+        }
         const title = typeof article.title === 'string' ? article.title : '';
         return `# ${title}\n\n${article.excerpt}`;
     });

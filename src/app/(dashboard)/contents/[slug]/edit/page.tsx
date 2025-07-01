@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 
 import type { FrontmatterSchema } from '@/types/frontmatter';
 import ContentEditClient from './content-edit-client';
-import { fetchAllContentsFromGitHub } from '@/lib/content';
+import { fetchContentBySlug } from '@/lib/content';
 
 interface PageProps {
     params: { slug: string };
@@ -30,12 +30,19 @@ export default async function ContentEditPage(props: PageProps) {
         notFound();
     }
 
-    // 記事データ取得
-    const allContents = await fetchAllContentsFromGitHub();
-    const article = allContents.find((c) => c.slug === slug);
-    if (!article) {
+    // 記事詳細データ取得（本文全体 + frontmatter）
+    const articleDetail = await fetchContentBySlug(slug);
+    if (!articleDetail) {
         notFound();
     }
 
-    return <ContentEditClient schema={schema} article={article} />;
+    // ContentEditClient用にContent型のオブジェクトを作成
+    const article = {
+        slug,
+        excerpt: '',
+        directory: articleDetail.directory,
+        ...articleDetail.frontmatter
+    };
+
+    return <ContentEditClient schema={schema} article={article} fullContent={articleDetail.content} />;
 }
