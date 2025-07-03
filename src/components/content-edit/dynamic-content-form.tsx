@@ -27,6 +27,10 @@ const DynamicContentForm = ({
 }: DynamicContentFormProps) => {
     const [formData, setFormData] = useState<FrontmatterData>(() => {
         const initialData: FrontmatterData = {};
+
+        // slug フィールドを強制的に追加
+        initialData['slug'] = initialValues?.slug || '';
+
         schema.fields.forEach((field) => {
             if (initialValues && initialValues[field.name] !== undefined) {
                 initialData[field.name] = initialValues[field.name];
@@ -46,6 +50,10 @@ const DynamicContentForm = ({
     // フォームデータの初期化
     useEffect(() => {
         const initialData: FrontmatterData = {};
+
+        // slug フィールドを強制的に追加
+        initialData['slug'] = initialValues?.slug || '';
+
         schema.fields.forEach((field) => {
             if (initialValues && initialValues[field.name] !== undefined) {
                 initialData[field.name] = initialValues[field.name];
@@ -62,6 +70,11 @@ const DynamicContentForm = ({
 
     const validateForm = (): boolean => {
         const newErrors: Record<string, string> = {};
+
+        // slug の必須チェック
+        if (!formData['slug'] || typeof formData['slug'] !== 'string' || formData['slug'].trim() === '') {
+            newErrors['slug'] = 'スラッグは必須です';
+        }
 
         schema.fields.forEach((field) => {
             const value = formData[field.name];
@@ -195,14 +208,24 @@ const DynamicContentForm = ({
                             </select>
                         </div>
                     )}
+
+                    {/* slug フィールドを強制的に追加 */}
+                    <StringField
+                        id="slug"
+                        label="スラッグ"
+                        required={true}
+                        error={errors['slug']}
+                        description="記事のURL用のスラッグです。英数字とハイフンのみ使用可能です。"
+                        value={typeof formData['slug'] === 'string' ? formData['slug'] : ''}
+                        onChange={(value) => handleFieldChange('slug', value)}
+                        placeholder="記事のスラッグを入力してください"
+                    />
+
                     {schema.fields.map(renderField)}
 
                     <div className="flex gap-2 pt-4">
                         <Button type="submit" disabled={isSubmitting}>
                             {isSubmitting ? '保存中...' : '保存'}
-                        </Button>
-                        <Button type="button" variant="outline">
-                            プレビュー
                         </Button>
                     </div>
                 </form>

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { AudioWaveform, BookOpen, Command, GalleryVerticalEnd, Settings2, LogOut } from 'lucide-react';
+import { auth } from '@/auth';
 
 import { NavMain } from '@/components/sidebar/nav-main';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail } from '@/components/ui/sidebar';
@@ -78,19 +79,23 @@ const data = {
     ]
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export async function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+    const session = await auth();
+    const user = session?.user;
+
     return (
         <Sidebar collapsible="icon" {...props}>
             <SidebarHeader>
-                {/* シンプルなユーザーアイコン＋ユーザー名表示 */}
+                {/* OAuthユーザーアイコン＋ユーザー名表示 */}
                 <div className="flex items-center gap-3 px-2 py-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                        src={data.user.avatar}
-                        alt={data.user.name}
+                        src={user?.image || 'user-solid.svg'}
+                        alt={user?.name || 'User'}
                         className="w-9 h-9 rounded-lg object-cover bg-gray-200 dark:bg-gray-700"
                     />
                     <span className="font-medium text-base text-gray-900 dark:text-gray-100 truncate">
-                        {data.user.name}
+                        {user?.name || 'User'}
                     </span>
                 </div>
             </SidebarHeader>

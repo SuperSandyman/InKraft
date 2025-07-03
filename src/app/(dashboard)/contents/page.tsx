@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { fetchAllContentsFromGitHub, Content } from '@/lib/content';
 import ContentsTable from '@/components/contents-list/contents-table';
 import Pagination from '@/components/contents-list/pagination';
@@ -13,6 +12,7 @@ import {
 } from '@/components/ui/breadcrumb';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import NewArticleButton from '@/components/contents-list/new-article-button';
 
 interface ContentsPageProps {
     searchParams: Promise<{
@@ -72,9 +72,7 @@ export default async function ContentsPage({ searchParams }: ContentsPageProps) 
                                 {status === 'draft' && `下書きの記事 (${totalCount}件)`}
                             </p>
                         </div>
-                        <Button size="default" className="h-10 px-6 text-sm font-semibold">
-                            新規記事作成
-                        </Button>
+                        <NewArticleButton />
                     </div>
 
                     {/* フィルタボタン */}

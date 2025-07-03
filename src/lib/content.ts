@@ -26,6 +26,8 @@ const getCmsConfig = async (): Promise<CmsConfig> => {
     return JSON.parse(file);
 };
 
+export { getCmsConfig };
+
 export interface Content {
     slug: string;
     excerpt: string;
@@ -244,4 +246,104 @@ export const fetchAllContentsFromGitHub = async (): Promise<Content[]> => {
     }
 
     return allContents;
+};
+
+// index.jsonを更新する関数
+export const updateCacheForContent = async (
+    directory: string,
+    slug: string,
+    frontmatter: Record<string, unknown>,
+    content: string,
+    operation: 'create' | 'update' | 'delete'
+): Promise<void> => {
+    try {
+        const config = await getCmsConfig();
+        const [owner, repo] = config.targetRepository.split('/');
+        const branch = config.branch || 'main';
+        const octokit = await getOctokitWithAuth();
+
+        // 対象のコンテンツタイプを検索
+        const contentType = config.content.find((c) => c.directory === directory);
+        if (!contentType?.metaCache?.path) return; // キャッシュ設定がない場合はスキップ
+
+        const cachePath = contentType.metaCache.path;
+
+        // 既存のキャッシュを読み込み
+        let existingContents: Content[] = [];
+        try {
+            const { data: file } = await octokit.repos.getContent({
+                owner,
+                repo,
+                path: cachePath,
+                ref: branch
+            });
+
+            if ('content' in file && file.content) {
+                const cacheContent = Buffer.from(file.content, 'base64').toString('utf-8');
+                existingContents = JSON.parse(cacheContent);
+            }
+        } catch {
+            // キャッシュファイルが存在しない場合は空配列で開始
+        }
+
+        // 操作に応じてキャッシュを更新
+        const updatedContents = [...existingContents];
+        const existingIndex = updatedContents.findIndex((item) => item.slug === slug);
+
+        if (operation === 'delete') {
+            if (existingIndex !== -1) {
+                updatedContents.splice(existingIndex, 1);
+            }
+        } else {
+            // 本文の冒頭75文字を取得
+            const excerpt = content.split('\n').find((line) => line.trim()) || '';
+            const shortExcerpt = excerpt.length > 75 ? `${excerpt.substring(0, 75)}...` : excerpt;
+
+            const newContent: Content = {
+                slug,
+                excerpt: shortExcerpt,
+                directory,
+                ...frontmatter
+            };
+
+            if (operation === 'create') {
+                updatedContents.push(newContent);
+            } else if (operation === 'update' && existingIndex !== -1) {
+                updatedContents[existingIndex] = newContent;
+            }
+        }
+
+        // キャッシュファイルを更新
+        const updatedCacheContent = JSON.stringify(updatedContents, null, 2);
+        const encodedContent = Buffer.from(updatedCacheContent, 'utf-8').toString('base64');
+
+        // SHAを取得（ファイルが存在する場合）
+        let sha: string | undefined;
+        try {
+            const { data: existingFile } = await octokit.repos.getContent({
+                owner,
+                repo,
+                path: cachePath,
+                ref: branch
+            });
+            if ('sha' in existingFile) {
+                sha = existingFile.sha;
+            }
+        } catch {
+            // ファイルが存在しない場合はshaは不要
+        }
+
+        await octokit.repos.createOrUpdateFileContents({
+            owner,
+            repo,
+            path: cachePath,
+            message: `Update cache: ${operation} ${slug} in ${directory}`,
+            content: encodedContent,
+            sha,
+            branch
+        });
+    } catch (error) {
+        console.error('キャッシュ更新に失敗:', error);
+        // キャッシュ更新の失敗は致命的ではないためエラーを投げない
+    }
 };

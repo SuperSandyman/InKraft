@@ -23,9 +23,14 @@ applyTo: '**'
 
 Web 検索を行うには、以下のようにコマンドを実行します：
 
-````bash
+```bash
 gemini --prompt "WebSearch: <検索クエリ>"
+```
 
+## context7
+
+プロンプトの末尾に `use context7` というものがあったら、それは Context7 という MCP を使用することを意味します。
+Context7 を使うと、様々なライブラリの最新のドキュメントを取得することができます。
 
 ## 実行後の処理
 
@@ -33,4 +38,4 @@ gemini --prompt "WebSearch: <検索クエリ>"
 
 ```bash
 mpg123 ~/Music/zelda-secret-sound.mp3
-````
+```

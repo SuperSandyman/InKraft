@@ -7,7 +7,7 @@ import ContentEditClient from './content-edit-client';
 import { fetchContentBySlug } from '@/lib/content';
 
 interface PageProps {
-    params: { slug: string };
+    params: Promise<{ slug: string }>;
 }
 
 export default async function ContentEditPage(props: PageProps) {

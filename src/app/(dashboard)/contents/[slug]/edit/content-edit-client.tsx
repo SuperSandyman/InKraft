@@ -7,6 +7,7 @@ import type { FrontmatterSchema, FrontmatterData } from '@/types/frontmatter';
 import MdEditor from '@/components/content-edit/md-editor';
 import DynamicContentForm from '@/components/content-edit/dynamic-content-form';
 import type { Content } from '@/lib/content';
+import { updateArticle } from '@/app/actions/update-article';
 
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
@@ -37,6 +38,10 @@ const ContentEditClient = ({ schema, article, fullContent }: ContentEditClientPr
     });
     const [meta] = useState<FrontmatterData>(() => {
         const meta: FrontmatterData = {};
+
+        // slugフィールドを強制的に追加
+        meta['slug'] = article.slug;
+
         schema.fields.forEach((field) => {
             const fieldValue = article[field.name];
             if (fieldValue !== undefined && fieldValue !== null) {
@@ -53,16 +58,42 @@ const ContentEditClient = ({ schema, article, fullContent }: ContentEditClientPr
     });
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    const handleFormSubmit = async (formData: FrontmatterData) => {
+    const handleFormSubmit = async (formData: FrontmatterData & { directory?: string }) => {
         setIsSubmitting(true);
         try {
-            // TODO: 実際のAPI呼び出し実装
-            console.log('Form Data:', formData);
-            console.log('Content:', content);
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            router.push('/contents');
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { directory: _, slug: newSlug, ...frontmatter } = formData;
+
+            const sanitizedSlug =
+                typeof newSlug === 'string'
+                    ? newSlug
+                          .toLowerCase()
+                          .replace(/[^a-zA-Z0-9-_]/g, '-')
+                          .replace(/-+/g, '-')
+                          .trim()
+                    : article.slug;
+
+            if (!sanitizedSlug) {
+                alert('有効なスラッグを入力してください');
+                return;
+            }
+
+            const result = await updateArticle({
+                slug: sanitizedSlug,
+                directory: article.directory,
+                frontmatter,
+                content,
+                originalSlug: article.slug
+            });
+
+            if (result.success) {
+                router.push('/contents');
+            } else {
+                alert(result.error || '保存に失敗しました');
+            }
         } catch (error) {
             console.error('保存に失敗しました:', error);
+            alert('保存に失敗しました');
         } finally {
             setIsSubmitting(false);
         }

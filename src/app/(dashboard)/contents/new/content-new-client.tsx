@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { FrontmatterSchema, FrontmatterData } from '@/types/frontmatter';
 import MdEditor from '@/components/content-edit/md-editor';
 import DynamicContentForm from '@/components/content-edit/dynamic-content-form';
+import { createArticle } from '@/app/actions/create-article';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -31,16 +32,45 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
     const [aiPrompt, setAiPrompt] = useState<string>('');
     const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
-    const handleFormSubmit = async (formData: FrontmatterData) => {
+    const handleFormSubmit = async (formData: FrontmatterData & { directory: string }) => {
         setIsSubmitting(true);
         try {
-            // TODO: 実際のAPI呼び出し実装
-            console.log('Form Data:', formData);
-            console.log('Content:', content);
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            router.push('/contents');
+            // フォームで入力されたslugを使用
+            const slug = formData.slug as string;
+
+            if (!slug || typeof slug !== 'string' || slug.trim() === '') {
+                alert('スラッグを入力してください');
+                return;
+            }
+
+            // slugのサニタイズ
+            const sanitizedSlug = slug
+                .toLowerCase()
+                .replace(/[^a-zA-Z0-9-_]/g, '-')
+                .replace(/-+/g, '-')
+                .trim();
+
+            if (!sanitizedSlug) {
+                alert('有効なスラッグを入力してください');
+                return;
+            }
+
+            const { directory, ...frontmatter } = formData;
+            const result = await createArticle({
+                slug: sanitizedSlug,
+                directory,
+                frontmatter,
+                content
+            });
+
+            if (result.success) {
+                router.push('/contents');
+            } else {
+                alert(result.error || '保存に失敗しました');
+            }
         } catch (error) {
             console.error('保存に失敗しました:', error);
+            alert('保存に失敗しました');
         } finally {
             setIsSubmitting(false);
         }
