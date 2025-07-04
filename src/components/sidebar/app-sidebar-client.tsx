@@ -5,7 +5,7 @@ import { AudioWaveform, BookOpen, Command, GalleryVerticalEnd, Settings2, LogOut
 import { NavMain } from '@/components/sidebar/nav-main';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail } from '@/components/ui/sidebar';
 import { logoutAction } from '@/app/actions/logout';
-import { UserInfo } from '@/components/sidebar/user-info';
+import { UserInfoClient } from '@/components/sidebar/user-info-client';
 
 // This is sample data.
 const data = {
@@ -78,12 +78,18 @@ const data = {
     ]
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface AppSidebarClientProps extends React.ComponentProps<typeof Sidebar> {
+    user?: {
+        name?: string | null;
+        image?: string | null;
+    };
+}
+
+export function AppSidebarClient({ user, ...props }: AppSidebarClientProps) {
     return (
         <Sidebar collapsible="icon" {...props}>
             <SidebarHeader>
-                {/* OAuthユーザーアイコン＋ユーザー名表示（クライアントコンポーネント化） */}
-                <UserInfo />
+                <UserInfoClient user={user} />
             </SidebarHeader>
             <SidebarContent>
                 <NavMain items={data.navMain} />
