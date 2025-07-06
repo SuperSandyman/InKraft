@@ -40,6 +40,10 @@ export default async function ContentNewPage() {
         directories = Array.isArray(config.content)
             ? (config.content as ContentConfigItem[]).map((c) => c.directory)
             : [];
+        // draftDirectory も選択肢に追加（重複しない場合のみ）
+        if (config.draftDirectory && !directories.includes(config.draftDirectory)) {
+            directories.unshift(config.draftDirectory);
+        }
     } catch (e) {
         console.error('cms.config.json の読み込みに失敗:', e);
     }

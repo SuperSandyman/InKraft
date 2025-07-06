@@ -9,7 +9,7 @@ type DashboardLayoutProps = {
 
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
     const session = await auth();
-    
+
     return (
         <SidebarProvider>
             <AppSidebarClient user={session?.user} />

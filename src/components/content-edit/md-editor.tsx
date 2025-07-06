@@ -10,17 +10,56 @@ interface MdEditorProps {
     value?: string;
     onChange?: (value: string) => void;
     height?: number;
+    directory?: string;
+    slug?: string;
 }
 
-const MdEditor = ({ value = '**Hello world!!!**', onChange, height = 400 }: MdEditorProps) => {
+const MdEditor = ({ value = '**Hello world!!!**', onChange, height = 400, directory, slug }: MdEditorProps) => {
     const [internalContent, setInternalContent] = useState<string>(value);
 
     const currentValue = onChange ? value : internalContent;
     const handleChange = onChange || setInternalContent;
 
+    // 画像ボタンの上書き
+    const toolbarComponent = (command: any, disabled: boolean, executeCommand: any) => {
+        if (command.keyCommand === 'image') {
+            return (
+                <button
+                    aria-label="画像アップロード"
+                    disabled={disabled}
+                    onClick={(evn) => {
+                        evn.stopPropagation();
+                        console.log('directory', directory, 'slug', slug);
+                        if (directory == null || directory === '' || slug == null || slug === '') {
+                            window.alert('画像アップロードには投稿先ディレクトリとslugが必要です');
+                            return;
+                        }
+                        // ここでアップロードUIを開く処理を今後実装
+                        window.alert(`アップロードUI: directory=${directory}, slug=${slug}`);
+                    }}
+                >
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="3" y="5" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                        <circle cx="7" cy="9" r="1.2" fill="currentColor" />
+                        <path
+                            d="M3 15L8.5 9.5C9.32843 8.67157 10.6716 8.67157 11.5 9.5L17 15"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                        />
+                    </svg>
+                </button>
+            );
+        }
+    };
+
     return (
         <div className="w-full" data-color-mode="light">
-            <MDEditor value={currentValue} onChange={(val) => handleChange(val ?? '')} height={height} />
+            <MDEditor
+                value={currentValue}
+                onChange={(val) => handleChange(val ?? '')}
+                height={height}
+                components={{ toolbar: toolbarComponent }}
+            />
         </div>
     );
 };

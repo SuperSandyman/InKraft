@@ -162,7 +162,7 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
                         <div className="lg:col-span-2 space-y-4">
                             <div className="bg-card rounded-lg border p-4">
                                 <h2 className="text-lg font-semibold mb-4">記事内容</h2>
-                                <MdEditor value={content} onChange={setContent} height={700} />
+                                <MdEditor value={content} onChange={setContent} height={700} directory="" slug="" />
                             </div>
                         </div>
                         {/* PC: メタデータ右/ モバイル: 非表示 */}

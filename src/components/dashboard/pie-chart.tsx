@@ -6,44 +6,19 @@ import { Label, Pie, PieChart, Cell } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
-const chartData = [
-    { browser: 'chrome', visitors: 275, fill: 'var(--chart-1)' },
-    { browser: 'safari', visitors: 200, fill: 'var(--chart-2)' },
-    { browser: 'firefox', visitors: 287, fill: 'var(--chart-3)' },
-    { browser: 'edge', visitors: 173, fill: 'var(--chart-4)' },
-    { browser: 'other', visitors: 190, fill: 'var(--chart-5)' }
-];
+interface ChartPieDonutTextProps {
+    data: { label: string; count: number; color: string }[];
+}
 
-const chartConfig = {
-    visitors: {
-        label: 'Visitors'
-    },
-    chrome: {
-        label: 'Chrome',
-        color: 'var(--chart-1)'
-    },
-    safari: {
-        label: 'Safari',
-        color: 'var(--chart-2)'
-    },
-    firefox: {
-        label: 'Firefox',
-        color: 'var(--chart-3)'
-    },
-    edge: {
-        label: 'Edge',
-        color: 'var(--chart-4)'
-    },
-    other: {
-        label: 'Other',
-        color: 'var(--chart-5)'
-    }
-} satisfies ChartConfig;
-
-export function ChartPieDonutText() {
-    const totalVisitors = React.useMemo(() => {
-        return chartData.reduce((acc, curr) => acc + curr.visitors, 0);
-    }, []);
+export const ChartPieDonutText: React.FC<ChartPieDonutTextProps> = ({ data }) => {
+    const total = React.useMemo(() => data.reduce((acc, cur) => acc + cur.count, 0), [data]);
+    const chartConfig = React.useMemo(() => {
+        const conf: ChartConfig = {};
+        data.forEach((d) => {
+            conf[d.label] = { label: d.label, color: d.color };
+        });
+        return conf;
+    }, [data]);
 
     return (
         <Card className="h-full flex flex-col">
@@ -51,7 +26,6 @@ export function ChartPieDonutText() {
                 <CardTitle className="text-lg font-semibold">コンテンツ分布</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex items-center justify-center min-h-0 min-w-0">
-                {/* チャート中央寄せ＆サイズ拡大 */}
                 <div className="flex-none flex items-center justify-center min-w-0 min-h-0">
                     <ChartContainer
                         config={chartConfig}
@@ -60,17 +34,17 @@ export function ChartPieDonutText() {
                         <PieChart>
                             <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
                             <Pie
-                                data={chartData}
-                                dataKey="visitors"
-                                nameKey="browser"
+                                data={data}
+                                dataKey="count"
+                                nameKey="label"
                                 innerRadius={52}
                                 outerRadius={85}
                                 cx="50%"
                                 cy="42%"
                                 strokeWidth={5}
                             >
-                                {chartData.map((entry) => (
-                                    <Cell key={entry.browser} fill={entry.fill} />
+                                {data.map((entry) => (
+                                    <Cell key={entry.label} fill={entry.color} />
                                 ))}
                                 <Label
                                     position="center"
@@ -89,14 +63,14 @@ export function ChartPieDonutText() {
                                                         y={cy - 4}
                                                         className="fill-foreground text-xl font-bold"
                                                     >
-                                                        {totalVisitors.toLocaleString()}
+                                                        {total.toLocaleString()}
                                                     </tspan>
                                                     <tspan
                                                         x={viewBox.cx}
                                                         y={cy + 12}
                                                         className="fill-muted-foreground text-xs"
                                                     >
-                                                        Visitors
+                                                        Articles
                                                     </tspan>
                                                 </text>
                                             );
@@ -111,4 +85,4 @@ export function ChartPieDonutText() {
             </CardContent>
         </Card>
     );
-}
+};

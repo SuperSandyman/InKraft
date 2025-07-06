@@ -138,7 +138,20 @@ const ContentEditClient = ({ schema, article, fullContent }: ContentEditClientPr
                         <div className="lg:col-span-2 space-y-4">
                             <div className="bg-card rounded-lg border p-4">
                                 <h2 className="text-lg font-semibold mb-4">記事内容</h2>
-                                <MdEditor value={content} onChange={setContent} height={700} />
+                                <MdEditor
+                                    value={content}
+                                    onChange={setContent}
+                                    height={700}
+                                    directory={article.directory}
+                                    slug={article.slug}
+                                />
+                                {/* デバッグ用 */}
+                                <div className="mt-2 p-2 bg-gray-100 text-xs">
+                                    Debug: directory={JSON.stringify(article.directory)}, slug=
+                                    {JSON.stringify(article.slug)}
+                                    <br />
+                                    Article keys: {Object.keys(article).join(', ')}
+                                </div>
                             </div>
                         </div>
                         <div className="lg:col-span-1">

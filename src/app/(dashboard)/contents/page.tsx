@@ -27,6 +27,12 @@ export default async function ContentsPage({ searchParams }: ContentsPageProps) 
     const limit = 10;
     // GitHubから全記事取得
     const allContents: Content[] = await fetchAllContentsFromGitHub();
+    // 投稿日（date）降順でソート
+    allContents.sort((a, b) => {
+        const dateA = typeof a.date === 'string' ? new Date(a.date).getTime() : 0;
+        const dateB = typeof b.date === 'string' ? new Date(b.date).getTime() : 0;
+        return dateB - dateA;
+    });
     // ステータスでフィルタリング（frontmatter の draft フィールドを使用）
     let filteredContents = allContents;
     if (status === 'published') {

@@ -1,3 +1,4 @@
+import { fetchContentTypeCounts } from '@/lib/content-stats';
 import { ChartPieDonutText } from '@/components/dashboard/pie-chart';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from '@/components/ui/breadcrumb';
 import GitHubHeatmap from '@/components/dashboard/github-heatmap';
@@ -6,7 +7,8 @@ import RecentArticles from '@/components/dashboard/recent-articles';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
 
-export default function Page() {
+export default async function Page() {
+    const chartData = await fetchContentTypeCounts();
     return (
         <>
             <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
@@ -28,7 +30,7 @@ export default function Page() {
                         <GitHubHeatmap />
                     </div>
                     <div className="bg-muted/50 aspect-video rounded-xl">
-                        <ChartPieDonutText />
+                        <ChartPieDonutText data={chartData} />
                     </div>
                     <div className="bg-muted/50 aspect-video rounded-xl">
                         <HackerNewsCard />
