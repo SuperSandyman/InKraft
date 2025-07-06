@@ -146,12 +146,12 @@ const ContentEditClient = ({ schema, article, fullContent }: ContentEditClientPr
                                     slug={article.slug}
                                 />
                                 {/* デバッグ用 */}
-                                <div className="mt-2 p-2 bg-gray-100 text-xs">
+                                {/* <div className="mt-2 p-2 bg-gray-100 text-xs">
                                     Debug: directory={JSON.stringify(article.directory)}, slug=
                                     {JSON.stringify(article.slug)}
                                     <br />
                                     Article keys: {Object.keys(article).join(', ')}
-                                </div>
+                                </div> */}
                             </div>
                         </div>
                         <div className="lg:col-span-1">

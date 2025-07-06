@@ -1,4 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z, ZodString, ZodArray } from 'zod';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +21,37 @@ interface DynamicContentFormProps {
     directories?: string[];
 }
 
+// zodスキーマをFrontmatterSchemaから動的生成
+const buildZodSchema = (schema: FrontmatterSchema) => {
+    const shape: Record<string, z.ZodTypeAny> = {};
+    schema.fields.forEach((field) => {
+        if (field.type === 'string' && field.multiple) {
+            let zodType = z.array(z.string()) as ZodArray<ZodString>;
+            if (field.required) {
+                zodType = zodType.min(1, `${field.label}は必須です`);
+            }
+            shape[field.name] = zodType;
+        } else if (field.type === 'string') {
+            let zodType = z.string();
+            if (field.required) {
+                zodType = zodType.min(1, `${field.label}は必須です`);
+            }
+            shape[field.name] = zodType;
+        } else if (field.type === 'date') {
+            let zodType = z.string();
+            if (field.required) {
+                zodType = zodType.min(1, `${field.label}は必須です`);
+            }
+            shape[field.name] = zodType;
+        } else if (field.type === 'boolean') {
+            shape[field.name] = z.boolean();
+        } else {
+            shape[field.name] = z.any();
+        }
+    });
+    return z.object(shape);
+};
+
 const DynamicContentForm = ({
     schema = defaultFrontmatterSchema,
     onSubmit,
@@ -25,147 +59,122 @@ const DynamicContentForm = ({
     initialValues,
     directories = []
 }: DynamicContentFormProps) => {
-    const [formData, setFormData] = useState<FrontmatterData>(() => {
-        const initialData: FrontmatterData = {};
-        schema.fields.forEach((field) => {
-            if (initialValues && initialValues[field.name] !== undefined) {
-                initialData[field.name] = initialValues[field.name];
-            } else if (field.multiple) {
-                initialData[field.name] = [];
-            } else if (field.type === 'boolean') {
-                initialData[field.name] = false;
-            } else {
-                initialData[field.name] = '';
-            }
-        });
-        return initialData;
-    });
-    const [errors, setErrors] = useState<Record<string, string>>({});
-    const [selectedDirectory, setSelectedDirectory] = useState<string>(directories[0] || '');
+    const zodSchema = useMemo(() => buildZodSchema(schema), [schema]);
 
-    // フォームデータの初期化
-    useEffect(() => {
-        const initialData: FrontmatterData = {};
+    // 初期値生成
+    const defaultValues = useMemo(() => {
+        const values: FrontmatterData = {};
         schema.fields.forEach((field) => {
             if (initialValues && initialValues[field.name] !== undefined) {
-                initialData[field.name] = initialValues[field.name];
+                values[field.name] = initialValues[field.name];
             } else if (field.multiple) {
-                initialData[field.name] = [];
+                values[field.name] = [];
             } else if (field.type === 'boolean') {
-                initialData[field.name] = false;
+                values[field.name] = false;
             } else {
-                initialData[field.name] = '';
+                values[field.name] = '';
             }
         });
-        setFormData(initialData);
+        return values;
     }, [schema, initialValues]);
 
-    const validateForm = (): boolean => {
-        const newErrors: Record<string, string> = {};
+    const {
+        control,
+        handleSubmit,
+        formState: { errors },
+        watch,
+        setValue
+    } = useForm<FrontmatterData>({
+        resolver: zodResolver(zodSchema),
+        defaultValues
+    });
 
-        schema.fields.forEach((field) => {
-            const value = formData[field.name];
-            if (field.required) {
-                if (field.type === 'string' && field.multiple) {
-                    if (!Array.isArray(value) || value.length === 0) {
-                        newErrors[field.name] = `${field.label}は必須です`;
-                    }
-                } else if (field.type === 'string' && !field.multiple) {
-                    if (typeof value !== 'string' || value === '') {
-                        newErrors[field.name] = `${field.label}は必須です`;
-                    }
-                } else if (field.type === 'date') {
-                    if (typeof value !== 'string' || value === '') {
-                        newErrors[field.name] = `${field.label}は必須です`;
-                    }
-                } else if (field.type === 'boolean') {
-                    // boolean型はrequiredでもfalseを許容する（未入力概念がないため）
-                }
-            }
-        });
+    // ディレクトリ選択
+    const watchedDirectory = watch('directory');
+    const selectedDirectory: string = typeof watchedDirectory === 'string'
+        ? watchedDirectory
+        : directories[0] || '';
 
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+    // submit
+    const onFormSubmit = (data: FrontmatterData) => {
+        onSubmit({ ...data, directory: selectedDirectory });
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (validateForm()) {
-            onSubmit({ ...formData, directory: selectedDirectory });
-        }
-    };
-
-    const handleFieldChange = (fieldName: string, value: string | string[] | boolean) => {
-        setFormData((prev) => ({
-            ...prev,
-            [fieldName]: value
-        }));
-
-        // エラーをクリア
-        if (errors[fieldName]) {
-            setErrors((prev) => {
-                const newErrors = { ...prev };
-                delete newErrors[fieldName];
-                return newErrors;
-            });
-        }
-    };
-
+    // フィールド描画
     const renderField = (field: FrontmatterField, index: number) => {
         const commonProps = {
             id: field.name,
             label: field.label,
             required: field.required,
-            error: errors[field.name],
+            error: errors[field.name]?.message as string,
             description: field.description
         };
-
         if (field.type === 'string' && field.multiple) {
             return (
-                <TagsField
+                <Controller
                     key={`${field.name}-${index}`}
-                    {...commonProps}
-                    value={Array.isArray(formData[field.name]) ? (formData[field.name] as string[]) : []}
-                    onChange={(value) => handleFieldChange(field.name, value)}
+                    name={field.name}
+                    control={control}
+                    render={({ field: rhfField }) => (
+                        <TagsField
+                            {...commonProps}
+                            value={Array.isArray(rhfField.value) ? rhfField.value : []}
+                            onChange={rhfField.onChange}
+                        />
+                    )}
                 />
             );
         }
-
         if (field.type === 'string' && !field.multiple) {
             return (
-                <StringField
+                <Controller
                     key={`${field.name}-${index}`}
-                    {...commonProps}
-                    value={typeof formData[field.name] === 'string' ? (formData[field.name] as string) : ''}
-                    onChange={(value) => handleFieldChange(field.name, value)}
-                    placeholder={`${field.label}を入力してください`}
+                    name={field.name}
+                    control={control}
+                    render={({ field: rhfField }) => (
+                        <StringField
+                            {...commonProps}
+                            value={typeof rhfField.value === 'string' ? rhfField.value : ''}
+                            onChange={rhfField.onChange}
+                            placeholder={`${field.label}を入力してください`}
+                        />
+                    )}
                 />
             );
         }
-
         if (field.type === 'date') {
             return (
-                <DateField
+                <Controller
                     key={`${field.name}-${index}`}
-                    {...commonProps}
-                    value={typeof formData[field.name] === 'string' ? (formData[field.name] as string) : ''}
-                    onChange={(value) => handleFieldChange(field.name, value)}
-                    format={field.format}
+                    name={field.name}
+                    control={control}
+                    render={({ field: rhfField }) => (
+                        <DateField
+                            {...commonProps}
+                            value={typeof rhfField.value === 'string' ? rhfField.value : ''}
+                            onChange={rhfField.onChange}
+                            format={field.format}
+                        />
+                    )}
                 />
             );
         }
-
         if (field.type === 'boolean') {
             return (
-                <BooleanField
+                <Controller
                     key={`${field.name}-${index}`}
-                    {...commonProps}
-                    value={typeof formData[field.name] === 'boolean' ? (formData[field.name] as boolean) : false}
-                    onChange={(value) => handleFieldChange(field.name, value)}
+                    name={field.name}
+                    control={control}
+                    render={({ field: rhfField }) => (
+                        <BooleanField
+                            {...commonProps}
+                            value={typeof rhfField.value === 'boolean' ? rhfField.value : false}
+                            onChange={rhfField.onChange}
+                        />
+                    )}
                 />
             );
         }
-
         return null;
     };
 
@@ -175,7 +184,7 @@ const DynamicContentForm = ({
                 <CardTitle>記事メタデータ</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
                     {directories.length > 1 && (
                         <div>
                             <label htmlFor="directory" className="block text-sm font-medium mb-1">
@@ -184,7 +193,7 @@ const DynamicContentForm = ({
                             <select
                                 id="directory"
                                 value={selectedDirectory}
-                                onChange={(e) => setSelectedDirectory(e.target.value)}
+                                onChange={(e) => setValue('directory', e.target.value)}
                                 className="w-full border rounded px-2 py-1"
                             >
                                 {directories.map((dir) => (
@@ -196,7 +205,6 @@ const DynamicContentForm = ({
                         </div>
                     )}
                     {schema.fields.map(renderField)}
-
                     <div className="flex gap-2 pt-4">
                         <Button type="submit" disabled={isSubmitting}>
                             {isSubmitting ? '保存中...' : '保存'}
