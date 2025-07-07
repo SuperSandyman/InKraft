@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 
 // MDEditorはSSR非対応のため動的インポート
@@ -20,6 +20,14 @@ const MdEditor = ({ value = '**Hello world!!!**', onChange, height = 400, direct
     const currentValue = onChange ? value : internalContent;
     const handleChange = onChange || setInternalContent;
 
+    // directory/slugの最新値をrefで保持
+    const dirRef = useRef(directory);
+    const slugRef = useRef(slug);
+    useEffect(() => {
+        dirRef.current = directory;
+        slugRef.current = slug;
+    }, [directory, slug]);
+
     // 画像ボタンの上書き
     const toolbarComponent = (command: any, disabled: boolean, executeCommand: any) => {
         if (command.keyCommand === 'image') {
@@ -29,13 +37,11 @@ const MdEditor = ({ value = '**Hello world!!!**', onChange, height = 400, direct
                     disabled={disabled}
                     onClick={(evn) => {
                         evn.stopPropagation();
-                        console.log('directory', directory, 'slug', slug);
-                        if (directory == null || directory === '' || slug == null || slug === '') {
+                        if (dirRef.current == null || dirRef.current === '' || slugRef.current == null || slugRef.current === '') {
                             window.alert('画像アップロードには投稿先ディレクトリとslugが必要です');
                             return;
                         }
-                        // ここでアップロードUIを開く処理を今後実装
-                        window.alert(`アップロードUI: directory=${directory}, slug=${slug}`);
+                        window.alert(`directory: ${dirRef.current}\nslug: ${slugRef.current}`);
                     }}
                 >
                     <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">

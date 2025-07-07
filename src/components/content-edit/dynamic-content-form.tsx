@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z, ZodString, ZodArray } from 'zod';
@@ -19,6 +19,7 @@ interface DynamicContentFormProps {
     isSubmitting?: boolean;
     initialValues?: FrontmatterData;
     directories?: string[];
+    onChange?: (data: FrontmatterData & { directory?: string }) => void;
 }
 
 // zodスキーマをFrontmatterSchemaから動的生成
@@ -57,13 +58,16 @@ const DynamicContentForm = ({
     onSubmit,
     isSubmitting = false,
     initialValues,
-    directories = []
+    directories = [],
+    onChange
 }: DynamicContentFormProps) => {
     const zodSchema = useMemo(() => buildZodSchema(schema), [schema]);
 
     // 初期値生成
     const defaultValues = useMemo(() => {
         const values: FrontmatterData = {};
+        // slugフィールドを必ず初期化
+        values['slug'] = initialValues && initialValues['slug'] !== undefined ? initialValues['slug'] : '';
         schema.fields.forEach((field) => {
             if (initialValues && initialValues[field.name] !== undefined) {
                 values[field.name] = initialValues[field.name];
@@ -91,14 +95,42 @@ const DynamicContentForm = ({
 
     // ディレクトリ選択
     const watchedDirectory = watch('directory');
-    const selectedDirectory: string = typeof watchedDirectory === 'string'
-        ? watchedDirectory
-        : directories[0] || '';
+    const selectedDirectory: string = typeof watchedDirectory === 'string' ? watchedDirectory : directories[0] || '';
+
+    // 値の変化をonChangeで通知
+    const watchedFields = watch();
+    useEffect(() => {
+        if (onChange) {
+            onChange({ ...watchedFields, directory: selectedDirectory });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [JSON.stringify(watchedFields), selectedDirectory]);
 
     // submit
     const onFormSubmit = (data: FrontmatterData) => {
         onSubmit({ ...data, directory: selectedDirectory });
     };
+
+    // slugフィールドを必ず先頭に追加
+    const renderSlugField = () => (
+        <Controller
+            name="slug"
+            control={control}
+            rules={{ required: 'スラッグは必須です' }}
+            render={({ field: rhfField }) => (
+                <StringField
+                    id="slug"
+                    label="スラッグ"
+                    required={true}
+                    error={errors.slug?.message as string}
+                    description="URL等に使われる英数字の識別子。必須。"
+                    value={typeof rhfField.value === 'string' ? rhfField.value : ''}
+                    onChange={rhfField.onChange}
+                    placeholder="slug（例: my-article）を入力してください"
+                />
+            )}
+        />
+    );
 
     // フィールド描画
     const renderField = (field: FrontmatterField, index: number) => {
@@ -204,6 +236,7 @@ const DynamicContentForm = ({
                             </select>
                         </div>
                     )}
+                    {renderSlugField()}
                     {schema.fields.map(renderField)}
                     <div className="flex gap-2 pt-4">
                         <Button type="submit" disabled={isSubmitting}>

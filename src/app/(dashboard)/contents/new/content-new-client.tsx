@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { FrontmatterSchema, FrontmatterData } from '@/types/frontmatter';
 import MdEditor from '@/components/content-edit/md-editor';
@@ -31,6 +31,7 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [aiPrompt, setAiPrompt] = useState<string>('');
     const [isGenerating, setIsGenerating] = useState<boolean>(false);
+    const [formMeta, setFormMeta] = useState<FrontmatterData & { directory?: string }>({});
 
     const handleFormSubmit = async (formData: FrontmatterData & { directory: string }) => {
         setIsSubmitting(true);
@@ -75,6 +76,18 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
             setIsSubmitting(false);
         }
     };
+
+    // フォーム入力変更時にformMetaを更新
+    const handleFormMetaChange = (data: FrontmatterData & { directory?: string }) => {
+        console.log('formMeta:', data);
+        setFormMeta(data);
+    };
+
+    // MdEditorに渡す値の詳細デバッグ
+    useEffect(() => {
+        console.log('[MdEditor debug] directory:', typeof formMeta.directory, formMeta.directory);
+        console.log('[MdEditor debug] slug:', typeof formMeta.slug, formMeta.slug);
+    }, [formMeta.directory, formMeta.slug]);
 
     const handleGenerateTemplate = async () => {
         setIsGenerating(true);
@@ -156,13 +169,21 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
                                 onSubmit={handleFormSubmit}
                                 isSubmitting={isSubmitting}
                                 directories={directories}
+                                initialValues={formMeta}
+                                onChange={handleFormMetaChange}
                             />
                         </div>
                         {/* PC: エディタ左/ モバイル: 下 */}
                         <div className="lg:col-span-2 space-y-4">
                             <div className="bg-card rounded-lg border p-4">
                                 <h2 className="text-lg font-semibold mb-4">記事内容</h2>
-                                <MdEditor value={content} onChange={setContent} height={700} directory="" slug="" />
+                                <MdEditor
+                                    value={content}
+                                    onChange={setContent}
+                                    height={700}
+                                    directory={typeof formMeta.directory === 'string' ? formMeta.directory : ''}
+                                    slug={typeof formMeta.slug === 'string' ? formMeta.slug : ''}
+                                />
                             </div>
                         </div>
                         {/* PC: メタデータ右/ モバイル: 非表示 */}
@@ -197,6 +218,8 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
                                 onSubmit={handleFormSubmit}
                                 isSubmitting={isSubmitting}
                                 directories={directories}
+                                initialValues={formMeta}
+                                onChange={handleFormMetaChange}
                             />
                         </div>
                     </div>
