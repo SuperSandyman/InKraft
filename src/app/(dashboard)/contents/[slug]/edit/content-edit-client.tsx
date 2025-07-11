@@ -20,13 +20,20 @@ import {
     BreadcrumbSeparator
 } from '@/components/ui/breadcrumb';
 
+interface GithubInfo {
+    owner: string;
+    repo: string;
+    branch: string;
+}
+
 interface ContentEditClientProps {
     schema: FrontmatterSchema;
     article: Content;
     fullContent?: string;
+    githubInfo: GithubInfo;
 }
 
-const ContentEditClient = ({ schema, article, fullContent }: ContentEditClientProps) => {
+const ContentEditClient = ({ schema, article, fullContent, githubInfo }: ContentEditClientProps) => {
     const router = useRouter();
     const [content, setContent] = useState<string>(() => {
         // fullContentが提供されている場合はそれを使用、そうでなければfallback
@@ -40,7 +47,15 @@ const ContentEditClient = ({ schema, article, fullContent }: ContentEditClientPr
         const meta: FrontmatterData = {};
 
         // slugフィールドを強制的に追加
-        meta['slug'] = article.slug;
+        meta['slug'] =
+            article.slug ||
+            (typeof article.title === 'string'
+                ? article.title
+                      .toLowerCase()
+                      .replace(/[^a-zA-Z0-9-_]/g, '-')
+                      .replace(/-+/g, '-')
+                      .trim()
+                : '');
 
         schema.fields.forEach((field) => {
             const fieldValue = article[field.name];
@@ -75,6 +90,7 @@ const ContentEditClient = ({ schema, article, fullContent }: ContentEditClientPr
 
             if (!sanitizedSlug) {
                 alert('有効なスラッグを入力してください');
+                setIsSubmitting(false);
                 return;
             }
 
@@ -144,14 +160,8 @@ const ContentEditClient = ({ schema, article, fullContent }: ContentEditClientPr
                                     height={700}
                                     directory={article.directory}
                                     slug={article.slug}
+                                    githubInfo={githubInfo}
                                 />
-                                {/* デバッグ用 */}
-                                {/* <div className="mt-2 p-2 bg-gray-100 text-xs">
-                                    Debug: directory={JSON.stringify(article.directory)}, slug=
-                                    {JSON.stringify(article.slug)}
-                                    <br />
-                                    Article keys: {Object.keys(article).join(', ')}
-                                </div> */}
                             </div>
                         </div>
                         <div className="lg:col-span-1">

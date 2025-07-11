@@ -4,6 +4,7 @@ import matter from 'gray-matter';
 
 import { getCmsConfig, updateCacheForContent } from '@/lib/content';
 import { getOctokitWithAuth } from '@/lib/github-api';
+import { replaceRawUrlWithFileNameInMarkdown } from '@/lib/github-path';
 
 interface UpdateArticleParams {
     slug: string;
@@ -23,6 +24,12 @@ export const updateArticle = async ({
     originalSlug
 }: UpdateArticleParams): Promise<{ success: boolean; error?: string }> => {
     try {
+        // 保存前にraw URLが含まれている場合のみ変換
+        let contentForSave = content;
+        if (/https:\/\/raw\.githubusercontent\.com\//.test(content)) {
+            contentForSave = replaceRawUrlWithFileNameInMarkdown(content);
+        }
+
         const config = await getCmsConfig();
         const [owner, repo] = config.targetRepository.split('/');
         const branch = config.branch || 'main';
@@ -45,7 +52,7 @@ export const updateArticle = async ({
         }
 
         // frontmatterとcontentを結合してMarkdownファイルを生成
-        const markdownContent = matter.stringify(content, frontmatter);
+        const markdownContent = matter.stringify(contentForSave, frontmatter);
         const encodedContent = Buffer.from(markdownContent, 'utf-8').toString('base64');
 
         if (currentSlug !== slug) {
@@ -86,7 +93,7 @@ export const updateArticle = async ({
 
             // キャッシュを更新（削除してから作成）
             await updateCacheForContent(directory, currentSlug, {}, '', 'delete');
-            await updateCacheForContent(directory, slug, frontmatter, content, 'create');
+            await updateCacheForContent(directory, slug, frontmatter, contentForSave, 'create');
         } else {
             // slugが変更されていない場合は通常の更新
             await octokit.repos.createOrUpdateFileContents({
@@ -100,7 +107,7 @@ export const updateArticle = async ({
             });
 
             // index.json キャッシュを更新
-            await updateCacheForContent(directory, slug, frontmatter, content, 'update');
+            await updateCacheForContent(directory, slug, frontmatter, contentForSave, 'update');
         }
 
         return { success: true };

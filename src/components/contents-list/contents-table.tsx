@@ -37,21 +37,16 @@ const getArrayField = (content: Content, fieldName: string): string[] => {
     return [];
 };
 
-const getStatusField = (content: Content, fieldName: string): 'published' | 'draft' => {
-    const field = content[fieldName];
-    if (field === true || field === 'draft') return 'draft';
-    return 'published';
-};
-
 const ContentsTable = ({ contents }: ContentsTableProps) => {
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
 
-    const handleDelete = (slug: string, directory: string, articleFile: string) => {
+    const handleDelete = (slug: string, directory: string) => {
         if (!confirm('本当に削除しますか？')) return;
         startTransition(async () => {
-            await deleteArticle({ slug, directory, articleFile });
+            await deleteArticle({ slug, directory });
             router.refresh();
+            window.location.reload(); // 強制リロードで最新情報を取得
         });
     };
 
@@ -72,7 +67,8 @@ const ContentsTable = ({ contents }: ContentsTableProps) => {
                 <tbody>
                     {contents.map((content) => {
                         const tags = getArrayField(content, 'tags');
-                        const status = getStatusField(content, 'draft');
+                        // isDraftプロパティ優先で判定
+                        const status: 'published' | 'draft' = content.isDraft ? 'draft' : 'published';
                         const title = getStringField(content, 'title');
                         const author = getStringField(content, 'author');
                         const categories = getArrayField(content, 'categories').join(', ');
@@ -105,11 +101,11 @@ const ContentsTable = ({ contents }: ContentsTableProps) => {
                                     <Badge variant={getStatusBadgeVariant(status)}>{getStatusText(status)}</Badge>
                                 </td>
                                 <td className="py-3 px-4">
-                                    <Badge variant="secondary">{categories}</Badge>
+                                    <Badge variant="secondary">{categories || '-'}</Badge>
                                 </td>
-                                <td className="py-3 px-4 text-sm">{author}</td>
-                                <td className="py-3 px-4 text-sm">{formatDate(publishedAt)}</td>
-                                <td className="py-3 px-4 text-sm">{formatDate(updatedAt)}</td>
+                                <td className="py-3 px-4 text-sm">{author || '-'}</td>
+                                <td className="py-3 px-4 text-sm">{formatDate(publishedAt) || '-'}</td>
+                                <td className="py-3 px-4 text-sm">{formatDate(updatedAt) || '-'}</td>
                                 <td className="py-3 px-4">
                                     <div className="flex gap-2">
                                         <a href={`/contents/${content.slug}/edit`}>
@@ -121,7 +117,7 @@ const ContentsTable = ({ contents }: ContentsTableProps) => {
                                             variant="outline"
                                             size="sm"
                                             disabled={isPending}
-                                            onClick={() => handleDelete(content.slug, content.directory, 'index.md')}
+                                            onClick={() => handleDelete(content.slug, content.directory)}
                                         >
                                             削除
                                         </Button>

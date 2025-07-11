@@ -13,6 +13,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import NewArticleButton from '@/components/contents-list/new-article-button';
+import cmsConfig from '../../../../cms.config.json';
 
 interface ContentsPageProps {
     searchParams: Promise<{
@@ -33,19 +34,29 @@ export default async function ContentsPage({ searchParams }: ContentsPageProps) 
         const dateB = typeof b.date === 'string' ? new Date(b.date).getTime() : 0;
         return dateB - dateA;
     });
-    // ステータスでフィルタリング（frontmatter の draft フィールドを使用）
+    // draftDirectoryを取得
+    const draftDirectory = cmsConfig.draftDirectory || 'draft';
+    // ステータスでフィルタリング
     let filteredContents = allContents;
     if (status === 'published') {
-        filteredContents = allContents.filter((content) => content.draft !== true);
+        filteredContents = allContents.filter(
+            (content) => content.draft !== true && content.directory !== draftDirectory
+        );
     } else if (status === 'draft') {
-        filteredContents = allContents.filter((content) => content.draft === true);
+        filteredContents = allContents.filter(
+            (content) => content.draft === true || content.directory === draftDirectory
+        );
     }
     // ページネーション
     const totalCount = filteredContents.length;
     const totalPages = Math.ceil(totalCount / limit);
     const startIndex = (pageNumber - 1) * limit;
     const endIndex = startIndex + limit;
-    const paginatedContents = filteredContents.slice(startIndex, endIndex);
+    // isDraftプロパティを付与
+    const paginatedContents = filteredContents.slice(startIndex, endIndex).map((content) => ({
+        ...content,
+        isDraft: content.draft === true || content.directory === draftDirectory
+    }));
 
     return (
         <>

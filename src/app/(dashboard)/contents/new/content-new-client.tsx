@@ -31,16 +31,18 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [aiPrompt, setAiPrompt] = useState<string>('');
     const [isGenerating, setIsGenerating] = useState<boolean>(false);
-    const [formMeta, setFormMeta] = useState<FrontmatterData & { directory?: string }>({});
+    const [formMeta, setFormMeta] = useState<FrontmatterData & { directory?: string }>({ slug: '' });
 
     const handleFormSubmit = async (formData: FrontmatterData & { directory: string }) => {
         setIsSubmitting(true);
+        // デバッグ: formDataとslugの値を出力
+        console.log('handleFormSubmit: formData =', formData);
+        const slug = (formData.slug ?? '').toString();
+        console.log('handleFormSubmit: slug =', slug, 'typeof:', typeof slug);
         try {
-            // フォームで入力されたslugを使用
-            const slug = formData.slug as string;
-
-            if (!slug || typeof slug !== 'string' || slug.trim() === '') {
+            if (!slug || slug.trim() === '') {
                 alert('スラッグを入力してください');
+                setIsSubmitting(false);
                 return;
             }
 
@@ -53,6 +55,7 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
 
             if (!sanitizedSlug) {
                 alert('有効なスラッグを入力してください');
+                setIsSubmitting(false);
                 return;
             }
 
@@ -79,8 +82,10 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
 
     // フォーム入力変更時にformMetaを更新
     const handleFormMetaChange = (data: FrontmatterData & { directory?: string }) => {
-        console.log('formMeta:', data);
-        setFormMeta(data);
+        setFormMeta({
+            ...data,
+            slug: typeof data.slug === 'string' ? data.slug : ''
+        });
     };
 
     // MdEditorに渡す値の詳細デバッグ

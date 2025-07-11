@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import type { FrontmatterSchema } from '@/types/frontmatter';
 import ContentEditClient from './content-edit-client';
 import { fetchContentBySlug } from '@/lib/content';
+import { replaceFileNameWithRawUrlInMarkdown } from '@/lib/github-path';
 
 interface PageProps {
     params: Promise<{ slug: string }>;
@@ -30,6 +31,27 @@ export default async function ContentEditPage(props: PageProps) {
         notFound();
     }
 
+    // cms.config.json からリポジトリ情報取得
+    const configPath = path.join(process.cwd(), 'cms.config.json');
+    let owner = '';
+    let repo = '';
+    let branch = 'main';
+    try {
+        const configRaw = fs.readFileSync(configPath, 'utf-8');
+        const config = JSON.parse(configRaw);
+        if (config.targetRepository) {
+            const [o, r] = config.targetRepository.split('/');
+            owner = o;
+            repo = r;
+        }
+        if (config.branch) {
+            branch = config.branch;
+        }
+    } catch (e) {
+        console.error('cms.config.json の読み込みに失敗:', e);
+        notFound();
+    }
+
     // 記事詳細データ取得（本文全体 + frontmatter）
     const articleDetail = await fetchContentBySlug(slug);
     if (!articleDetail) {
@@ -44,5 +66,22 @@ export default async function ContentEditPage(props: PageProps) {
         ...articleDetail.frontmatter
     };
 
-    return <ContentEditClient schema={schema} article={article} fullContent={articleDetail.content} />;
+    // 本文の画像パスをファイル名→raw URLに変換
+    const contentForEdit = await replaceFileNameWithRawUrlInMarkdown(
+        articleDetail.content,
+        articleDetail.directory,
+        slug,
+        owner,
+        repo,
+        branch
+    );
+
+    return (
+        <ContentEditClient
+            schema={schema}
+            article={article}
+            fullContent={contentForEdit}
+            githubInfo={{ owner, repo, branch }}
+        />
+    );
 }

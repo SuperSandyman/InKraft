@@ -20,11 +20,15 @@ interface DynamicContentFormProps {
     initialValues?: FrontmatterData;
     directories?: string[];
     onChange?: (data: FrontmatterData & { directory?: string }) => void;
+    setSlugValueRef?: (fn: (slug: string) => void) => void;
+    onTitleChange?: (title: string) => void;
 }
 
 // zodスキーマをFrontmatterSchemaから動的生成
 const buildZodSchema = (schema: FrontmatterSchema) => {
     const shape: Record<string, z.ZodTypeAny> = {};
+    // slugフィールドを必須stringとして追加
+    shape['slug'] = z.string().min(1, 'スラッグは必須です');
     schema.fields.forEach((field) => {
         if (field.type === 'string' && field.multiple) {
             let zodType = z.array(z.string()) as ZodArray<ZodString>;
@@ -59,8 +63,10 @@ const DynamicContentForm = ({
     isSubmitting = false,
     initialValues,
     directories = [],
-    onChange
-}: DynamicContentFormProps) => {
+    onChange,
+    setSlugValueRef,
+    onTitleChange
+}: DynamicContentFormProps & { setSlugValueRef?: (fn: (slug: string) => void) => void }) => {
     const zodSchema = useMemo(() => buildZodSchema(schema), [schema]);
 
     // 初期値生成
@@ -92,6 +98,13 @@ const DynamicContentForm = ({
         resolver: zodResolver(zodSchema),
         defaultValues
     });
+
+    // setValueを親から使えるようにrefで渡す
+    useEffect(() => {
+        if (setSlugValueRef) {
+            setSlugValueRef((slug: string) => setValue('slug', slug));
+        }
+    }, [setSlugValueRef, setValue]);
 
     // ディレクトリ選択
     const watchedDirectory = watch('directory');
@@ -158,6 +171,28 @@ const DynamicContentForm = ({
             );
         }
         if (field.type === 'string' && !field.multiple) {
+            // タイトルフィールドの場合はonTitleChangeを呼ぶ
+            if (field.name === 'title' && onTitleChange) {
+                return (
+                    <Controller
+                        key={`${field.name}-${index}`}
+                        name={field.name}
+                        control={control}
+                        render={({ field: rhfField }) => (
+                            <StringField
+                                {...commonProps}
+                                value={typeof rhfField.value === 'string' ? rhfField.value : ''}
+                                onChange={(val) => {
+                                    rhfField.onChange(val);
+                                    onTitleChange(val);
+                                }}
+                                placeholder={`${field.label}を入力してください`}
+                            />
+                        )}
+                    />
+                );
+            }
+            // 通常のstringフィールド
             return (
                 <Controller
                     key={`${field.name}-${index}`}
@@ -210,6 +245,7 @@ const DynamicContentForm = ({
         return null;
     };
 
+    // setValueを外部から使えるように返す
     return (
         <Card>
             <CardHeader>
@@ -253,3 +289,4 @@ const DynamicContentForm = ({
 };
 
 export default DynamicContentForm;
+export type { FrontmatterData };

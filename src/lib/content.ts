@@ -20,10 +20,31 @@ interface CmsConfig {
 }
 
 // サーバーサイドでローカルの cms.config.json を読み込む
-const getCmsConfig = async (): Promise<CmsConfig> => {
+const getCmsConfig = async (): Promise<CmsConfig & { draftDirectory?: string }> => {
     const configPath = path.join(process.cwd(), 'cms.config.json');
     const file = await fs.readFile(configPath, 'utf-8');
     return JSON.parse(file);
+};
+
+// draftDirectoryも含めたcontentTypeリストを返す
+const getAllContentTypes = async () => {
+    const config = await getCmsConfig();
+    const contentTypes = [...config.content];
+    if (config.draftDirectory) {
+        // 既にcontentにdraftDirectoryが含まれていない場合のみ追加
+        const exists = contentTypes.some((c) => c.directory === config.draftDirectory);
+        if (!exists) {
+            contentTypes.push({
+                directory: config.draftDirectory,
+                articleFile: 'index.md',
+                metaCache: {
+                    type: 'json',
+                    path: `${config.draftDirectory}/index.json`
+                }
+            });
+        }
+    }
+    return contentTypes;
 };
 
 export { getCmsConfig };
@@ -92,13 +113,30 @@ const createCacheFile = async (
         const cacheContent = JSON.stringify(contents, null, 2);
         const encodedContent = Buffer.from(cacheContent, 'utf-8').toString('base64');
 
+        // 既存ファイルのSHAを取得（存在しない場合はundefined）
+        let sha: string | undefined = undefined;
+        try {
+            const { data: existingFile } = await octokit.repos.getContent({
+                owner,
+                repo,
+                path: cachePath,
+                ref: branch
+            });
+            if ('sha' in existingFile) {
+                sha = existingFile.sha;
+            }
+        } catch {
+            // ファイルが存在しない場合はshaは不要
+        }
+
         await octokit.repos.createOrUpdateFileContents({
             owner,
             repo,
             path: cachePath,
             message: `Update cache: ${cachePath}`,
             content: encodedContent,
-            branch
+            branch,
+            ...(sha ? { sha } : {})
         });
     } catch (error) {
         console.error(`キャッシュファイル作成に失敗: ${cachePath}`, error);
@@ -176,10 +214,10 @@ export const fetchContentBySlug = async (
     const branch = config.branch || 'main';
     const octokit = await getOctokitWithAuth();
 
-    // 全てのcontent typeでslugを検索
-    for (const contentType of config.content) {
+    // draftDirectoryも含めた全てのcontent typeでslugを検索
+    const contentTypes = await getAllContentTypes();
+    for (const contentType of contentTypes) {
         const { directory, articleFile } = contentType;
-
         try {
             const { data: file } = await octokit.repos.getContent({
                 owner,
@@ -187,11 +225,9 @@ export const fetchContentBySlug = async (
                 path: `${directory}/${slug}/${articleFile}`,
                 ref: branch
             });
-
             if ('content' in file && file.content) {
                 const md = Buffer.from(file.content, 'base64').toString('utf-8');
                 const { data: frontmatter, content } = matter(md);
-
                 return {
                     frontmatter,
                     content,
@@ -199,11 +235,9 @@ export const fetchContentBySlug = async (
                 };
             }
         } catch {
-            // このディレクトリには存在しない、次のディレクトリを確認
             continue;
         }
     }
-
     return null; // 見つからなかった場合
 };
 
@@ -214,7 +248,9 @@ export const fetchAllContentsFromGitHub = async (): Promise<Content[]> => {
     const octokit = await getOctokitWithAuth();
     const allContents: Content[] = [];
 
-    for (const contentType of config.content) {
+    // draftDirectoryも含めたcontentTypeリストを取得
+    const contentTypes = await getAllContentTypes();
+    for (const contentType of contentTypes) {
         const { directory, articleFile, metaCache } = contentType;
 
         if (metaCache?.path) {
