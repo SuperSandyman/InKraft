@@ -96,15 +96,27 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
 
     const handleGenerateTemplate = async () => {
         setIsGenerating(true);
+        setContent('');
         try {
-            // TODO: 実際のAI生成API呼び出し
-            setTimeout(() => {
-                setContent(
-                    `# ${aiPrompt}\n\nこの記事では「${aiPrompt}」について解説します。\n\n## 見出し1\n\nここに本文を書いてください。\n\n## 見出し2\n\nここに本文を書いてください。`
-                );
-                setIsGenerating(false);
-            }, 1000);
+            const response = await fetch('/api/ai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ theme: aiPrompt })
+            });
+            if (!response.body) throw new Error('ストリームが取得できません');
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let result = '';
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value, { stream: true });
+                result += chunk;
+                setContent(result);
+            }
         } catch {
+            setContent('AI生成に失敗しました');
+        } finally {
             setIsGenerating(false);
         }
     };
