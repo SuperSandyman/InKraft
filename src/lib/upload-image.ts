@@ -1,6 +1,7 @@
 import type { Octokit } from '@octokit/rest';
 
 import { getOctokitWithAuth } from './github-api';
+import { getCmsConfig } from './content';
 
 export interface UploadImageParams {
     directory: string;
@@ -25,7 +26,7 @@ export interface UploadImageResult {
  * @throws エラー時は例外
  */
 export const uploadImageToGitHub = async (params: UploadImageParams): Promise<UploadImageResult> => {
-    const { directory, slug, file, branch = 'main' } = params;
+    const { directory, slug, file, branch } = params;
 
     // バリデーション
     if (!directory || !slug) {
@@ -47,9 +48,11 @@ export const uploadImageToGitHub = async (params: UploadImageParams): Promise<Up
     // base64エンコード
     const base64 = Buffer.from(file.buffer).toString('base64');
 
-    // パス生成（記事ディレクトリ直下に配置）
-    const owner = 'SuperSandyman'; // TODO: cms.config.jsonから取得するのが理想
-    const repo = 'sandyman.dev-content';
+    // cms.config.jsonからリポジトリ情報を取得
+    const config = await getCmsConfig();
+    const [owner, repo] = config.targetRepository.split('/');
+    const useBranch = branch || config.branch || 'main';
+
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const fileExtension = file.name.split('.').pop() || '';
     const fileName = `${file.name.replace(/\.[^/.]+$/, '')}-${timestamp}.${fileExtension}`;
@@ -64,7 +67,7 @@ export const uploadImageToGitHub = async (params: UploadImageParams): Promise<Up
             owner,
             repo,
             path: imagePath,
-            ref: branch
+            ref: useBranch
         });
         if (!Array.isArray(data) && 'sha' in data && data.sha) {
             sha = data.sha;
@@ -89,11 +92,11 @@ export const uploadImageToGitHub = async (params: UploadImageParams): Promise<Up
             path: imagePath,
             message: `Upload image: ${fileName}`,
             content: base64,
-            branch,
+            branch: useBranch,
             ...(sha && { sha })
         });
 
-        const imageUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${imagePath}`;
+        const imageUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${useBranch}/${imagePath}`;
 
         if (!res.data.commit?.sha) {
             throw new Error('コミットSHAが取得できませんでした');

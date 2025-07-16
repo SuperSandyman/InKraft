@@ -23,13 +23,8 @@ export const deleteArticle = async ({ slug, directory }: DeleteArticleParams): P
         let cachePath = '';
         let cacheSha = '';
 
-        console.log('削除対象:', { slug, directory });
-        console.log('見つかったcontentType:', contentType);
-
         if (contentType?.metaCache?.path) {
             cachePath = contentType.metaCache.path;
-            console.log('キャッシュパス:', cachePath);
-
             // index.jsonの中身を取得
             try {
                 const { data: cacheFile } = await octokit.repos.getContent({
@@ -43,18 +38,13 @@ export const deleteArticle = async ({ slug, directory }: DeleteArticleParams): P
                     cacheContent = Buffer.from(cacheFile.content, 'base64').toString('utf-8');
                 }
                 const arr = cacheContent ? JSON.parse(cacheContent) : [];
-                console.log('index.json内の記事数:', arr.length);
-
                 if (Array.isArray(arr) && arr.length === 1 && 'sha' in cacheFile) {
                     isLastArticle = true;
                     cacheSha = cacheFile.sha;
-                    console.log('最後の1件として判定');
                 }
-            } catch (error) {
-                console.log('index.jsonが存在しないか取得に失敗:', error);
+            } catch {
+                // index.jsonが存在しないか取得に失敗
             }
-        } else {
-            console.log('metaCacheが設定されていません');
         }
 
         // ディレクトリ内の全ファイルを取得
@@ -92,7 +82,6 @@ export const deleteArticle = async ({ slug, directory }: DeleteArticleParams): P
 
         if (isLastArticle && cachePath && cacheSha) {
             // 最後の1件だった場合はindex.jsonも削除
-            console.log('index.jsonを削除します:', cachePath);
             await octokit.repos.deleteFile({
                 owner,
                 repo,
@@ -101,16 +90,13 @@ export const deleteArticle = async ({ slug, directory }: DeleteArticleParams): P
                 sha: cacheSha,
                 branch
             });
-            console.log('index.jsonの削除が完了しました');
         } else {
             // それ以外はindex.jsonを更新
-            console.log('index.jsonを更新します');
             await updateCacheForContent(directory, slug, {}, '', 'delete');
         }
 
         return true;
-    } catch (error) {
-        console.error('記事削除に失敗', error);
+    } catch {
         return false;
     }
 };
