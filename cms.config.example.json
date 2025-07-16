@@ -1,0 +1,24 @@
+{
+    "targetRepository": "YOUR_GITHUB_USERNAME/YOUR_CONTENT_REPO",
+    "draftDirectory": "draft",
+    "content": [
+        {
+            "directory": "posts",
+            "articleFile": "index.md",
+            "imageDirInsideContent": true,
+            "metaCache": {
+                "type": "json",
+                "path": "posts/index.json"
+            }
+        },
+        {
+            "directory": "memo",
+            "articleFile": "index.md",
+            "imageDirInsideContent": true,
+            "metaCache": {
+                "type": "json",
+                "path": "memo/index.json"
+            }
+        }
+    ]
+}

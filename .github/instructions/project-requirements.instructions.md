@@ -52,14 +52,16 @@ Markdown + GitHub ベースの軽量・拡張可能な CMS。
 
 ```json
 {
-    "targetRepository": "yourname/blog-content",
+    "targetRepository": "SuperSandyman/sandyman.dev-content",
     "branch": "main",
-    "draftDirectory": "_drafts",
+
+    /* pm.py の処理に合わせ、共通の下書きフォルダを draft/ に固定 */
+    "draftDirectory": "draft",
+
     "content": [
         {
-            "type": "posts",
             "directory": "posts",
-            "articleFile": "article.md",
+            "articleFile": "index.md",
             "imageDirInsideContent": true,
             "metaCache": {
                 "type": "json",
@@ -67,10 +69,8 @@ Markdown + GitHub ベースの軽量・拡張可能な CMS。
             }
         },
         {
-            "type": "scraps",
             "directory": "scraps",
-            "draftDirectory": "_drafts_scraps",
-            "articleFile": "article.md",
+            "articleFile": "index.md",
             "imageDirInsideContent": true,
             "metaCache": {
                 "type": "json",
@@ -78,21 +78,26 @@ Markdown + GitHub ベースの軽量・拡張可能な CMS。
             }
         }
     ],
+
+    /* GitHub OAuth（clientId はご自身のアプリで置き換えてください） */
     "auth": {
         "provider": "github",
         "clientId": "YOUR_CLIENT_ID",
         "scopes": ["repo", "read:user"]
     },
+
     "editor": {
         "theme": "dark",
         "previewEnabled": true,
         "extensions": ["math", "diagram", "highlight"]
     },
+
     "meta": {
         "useTags": true,
         "useCategories": true,
         "allowCustomFields": true
     },
+
     "deploy": {
         "useGitHubActions": true,
         "outputDir": "dist"

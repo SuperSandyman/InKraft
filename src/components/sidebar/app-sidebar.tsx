@@ -1,174 +1,83 @@
 'use client';
 
 import * as React from 'react';
-import {
-    AudioWaveform,
-    BookOpen,
-    Bot,
-    Command,
-    Frame,
-    GalleryVerticalEnd,
-    Map,
-    PieChart,
-    Settings2,
-    SquareTerminal
-} from 'lucide-react';
-
+import { BookOpen } from 'lucide-react';
 import { NavMain } from '@/components/sidebar/nav-main';
-import { NavProjects } from '@/components/sidebar/nav-projects';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail } from '@/components/ui/sidebar';
+import { logoutAction } from '@/app/actions/logout';
+import { UserInfoClient } from '@/components/sidebar/user-info-client';
+import { SidebarLogoutButton } from './sidebar-logout-button';
 
 // This is sample data.
 const data = {
-    user: {
-        name: 'shadcn',
-        email: 'm@example.com',
-        avatar: '/avatars/shadcn.jpg'
-    },
-    teams: [
-        {
-            name: 'Acme Inc',
-            logo: GalleryVerticalEnd,
-            plan: 'Enterprise'
-        },
-        {
-            name: 'Acme Corp.',
-            logo: AudioWaveform,
-            plan: 'Startup'
-        },
-        {
-            name: 'Evil Corp.',
-            logo: Command,
-            plan: 'Free'
-        }
-    ],
     navMain: [
         {
-            title: 'Playground',
-            url: '#',
-            icon: SquareTerminal,
+            title: '記事一覧',
+            url: '/contents',
+            icon: BookOpen,
             isActive: true,
             items: [
                 {
-                    title: 'History',
-                    url: '#'
+                    title: '公開中',
+                    url: '/contents?status=published'
                 },
                 {
-                    title: 'Starred',
-                    url: '#'
+                    title: '下書き',
+                    url: '/contents?status=draft'
                 },
                 {
-                    title: 'Settings',
-                    url: '#'
-                }
-            ]
-        },
-        {
-            title: 'Models',
-            url: '#',
-            icon: Bot,
-            items: [
-                {
-                    title: 'Genesis',
-                    url: '#'
-                },
-                {
-                    title: 'Explorer',
-                    url: '#'
-                },
-                {
-                    title: 'Quantum',
-                    url: '#'
-                }
-            ]
-        },
-        {
-            title: 'Documentation',
-            url: '#',
-            icon: BookOpen,
-            items: [
-                {
-                    title: 'Introduction',
-                    url: '#'
-                },
-                {
-                    title: 'Get Started',
-                    url: '#'
-                },
-                {
-                    title: 'Tutorials',
-                    url: '#'
-                },
-                {
-                    title: 'Changelog',
-                    url: '#'
-                }
-            ]
-        },
-        {
-            title: 'Settings',
-            url: '#',
-            icon: Settings2,
-            items: [
-                {
-                    title: 'General',
-                    url: '#'
-                },
-                {
-                    title: 'Team',
-                    url: '#'
-                },
-                {
-                    title: 'Billing',
-                    url: '#'
-                },
-                {
-                    title: 'Limits',
-                    url: '#'
+                    title: '新規作成',
+                    url: '/contents/new'
                 }
             ]
         }
-    ],
-    projects: [
-        {
-            name: 'Design Engineering',
-            url: '#',
-            icon: Frame
-        },
-        {
-            name: 'Sales & Marketing',
-            url: '#',
-            icon: PieChart
-        },
-        {
-            name: 'Travel',
-            url: '#',
-            icon: Map
-        }
+        // {
+        //     title: '設定',
+        //     url: '/settings',
+        //     icon: Settings2,
+        //     items: [
+        //         {
+        //             title: '一般設定',
+        //             url: '/settings/general'
+        //         },
+        //         {
+        //             title: 'GitHub連携',
+        //             url: '/settings/github'
+        //         },
+        //         {
+        //             title: 'テーマ設定',
+        //             url: '/settings/theme'
+        //         },
+        //         {
+        //             title: 'ユーザー管理',
+        //             url: '/settings/users'
+        //         }
+        //     ]
+        // }
     ]
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+    user?: {
+        name?: string | null;
+        image?: string | null;
+    };
+}
+
+export function AppSidebar({ user, ...props }: AppSidebarProps) {
     return (
         <Sidebar collapsible="icon" {...props}>
             <SidebarHeader>
-                {/* シンプルなユーザーアイコン＋ユーザー名表示 */}
-                <div className="flex items-center gap-3 px-2 py-3">
-                    <img
-                        src={data.user.avatar}
-                        alt={data.user.name}
-                        className="w-9 h-9 rounded-lg object-cover bg-gray-200 dark:bg-gray-700"
-                    />
-                    <span className="font-medium text-base text-gray-900 dark:text-gray-100 truncate">
-                        {data.user.name}
-                    </span>
-                </div>
+                <UserInfoClient user={user} />
             </SidebarHeader>
             <SidebarContent>
                 <NavMain items={data.navMain} />
-                <NavProjects projects={data.projects} />
             </SidebarContent>
-            <SidebarFooter />
+            <SidebarFooter>
+                <form action={logoutAction} className="w-full">
+                    <SidebarLogoutButton />
+                </form>
+            </SidebarFooter>
             <SidebarRail />
         </Sidebar>
     );

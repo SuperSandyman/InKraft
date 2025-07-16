@@ -1,46 +1,52 @@
-import { AppSidebar } from '@/components/sidebar/app-sidebar';
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator
-} from '@/components/ui/breadcrumb';
+import { fetchContentTypeCounts } from '@/lib/content-stats';
+import { fetchAllContentsFromGitHub } from '@/lib/content';
+import { ChartPieDonutText } from '@/components/dashboard/pie-chart';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from '@/components/ui/breadcrumb';
+import GitHubHeatmap from '@/components/dashboard/github-heatmap';
+import HackerNewsCard from '@/components/dashboard/hackernews';
+import RecentArticles from '@/components/dashboard/recent-articles';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
-export default function Page() {
+export default async function Page() {
+    const chartData = await fetchContentTypeCounts();
+    const allArticles = await fetchAllContentsFromGitHub();
+    // 日付降順で5件だけ渡す（frontmatter.dateがあればそれを使う）
+    const recentArticles = allArticles
+        .filter((a) => typeof a.date === 'string' && a.date)
+        .sort((a, b) => ((a.date as string) > (b.date as string) ? -1 : 1))
+        .slice(0, 5);
     return (
-        <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset>
-                <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-                    <div className="flex items-center gap-2 px-4">
-                        <SidebarTrigger className="-ml-1" />
-                        <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-                        <Breadcrumb>
-                            <BreadcrumbList>
-                                <BreadcrumbItem className="hidden md:block">
-                                    <BreadcrumbLink href="#">Building Your Application</BreadcrumbLink>
-                                </BreadcrumbItem>
-                                <BreadcrumbSeparator className="hidden md:block" />
-                                <BreadcrumbItem>
-                                    <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-                                </BreadcrumbItem>
-                            </BreadcrumbList>
-                        </Breadcrumb>
-                    </div>
-                </header>
-                <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-                    <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                        <div className="bg-muted/50 aspect-video rounded-xl" />
-                        <div className="bg-muted/50 aspect-video rounded-xl" />
-                        <div className="bg-muted/50 aspect-video rounded-xl" />
-                    </div>
-                    <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
+        <>
+            <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+                <div className="flex items-center gap-2 px-4">
+                    <SidebarTrigger className="-ml-1" />
+                    <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+                    <Breadcrumb>
+                        <BreadcrumbList>
+                            <BreadcrumbItem>
+                                <BreadcrumbLink href="/">ホーム</BreadcrumbLink>
+                            </BreadcrumbItem>
+                        </BreadcrumbList>
+                    </Breadcrumb>
                 </div>
-            </SidebarInset>
-        </SidebarProvider>
+            </header>
+            <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+                <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+                    <div className="bg-muted/50 aspect-video rounded-xl">
+                        <GitHubHeatmap articles={allArticles} />
+                    </div>
+                    <div className="bg-muted/50 aspect-video rounded-xl">
+                        <ChartPieDonutText data={chartData} />
+                    </div>
+                    <div className="bg-muted/50 aspect-video rounded-xl">
+                        <HackerNewsCard />
+                    </div>
+                </div>
+                <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min">
+                    <RecentArticles articles={recentArticles} />
+                </div>
+            </div>
+        </>
     );
 }
