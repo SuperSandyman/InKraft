@@ -1,6 +1,6 @@
 {
-    "name": "sandyman.dev-cms",
-    "version": "0.1.0",
+    "name": "inkraft",
+    "version": "1.0.0",
     "private": true,
     "scripts": {
         "dev": "next dev --turbopack",
