@@ -16,17 +16,6 @@ applyTo: '**'
 
 その他については、TypeScript における一般的な実装に従う。
 
-## Gemini Search
-
-`gemini` は Google Gemini CLI（コマンドラインインターフェース）です。  
-実装する際に、自分の力じゃどうしようもなく、Web 検索が必要な場合は、**必ず `gemini --prompt` を使って Task Tool 経由で検索**を実行してください。
-
-Web 検索を行うには、以下のようにコマンドを実行します：
-
-```bash
-gemini --prompt "WebSearch: <検索クエリ>"
-```
-
 ## context7
 
 プロンプトの末尾に `use context7` というものがあったら、それは Context7 という MCP を使用することを意味します。

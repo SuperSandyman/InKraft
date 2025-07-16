@@ -1,40 +1,25 @@
 import * as React from 'react';
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Content } from '@/lib/content';
 
-interface Article {
-    id: string;
-    title: string;
-    date: string; // YYYY/MM/DD
-    category: string;
-    tags: string[];
+interface RecentArticlesProps {
+    articles: Content[];
 }
 
-const dummyArticles: Article[] = [
-    {
-        id: '1',
-        title: 'Next.jsで作るモダンCMSの設計',
-        date: '2025/06/08',
-        category: '技術解説',
-        tags: ['Next.js', 'CMS', '設計']
-    },
-    {
-        id: '2',
-        title: 'GitHub Actionsで自動デプロイ',
-        date: '2025/06/05',
-        category: 'CI/CD',
-        tags: ['GitHub', 'CI/CD']
-    },
-    {
-        id: '3',
-        title: 'Tailwind CSSでダッシュボードUI',
-        date: '2025/06/01',
-        category: 'UI/デザイン',
-        tags: ['Tailwind CSS', 'UI']
-    }
-];
+const getStringField = (content: Content, fieldName: string): string => {
+    const field = content[fieldName];
+    return typeof field === 'string' ? field : '';
+};
 
-const RecentArticles: React.FC = () => {
+const getArrayField = (content: Content, fieldName: string): string[] => {
+    const field = content[fieldName];
+    if (Array.isArray(field)) return field.filter((item) => typeof item === 'string');
+    if (typeof field === 'string') return [field];
+    return [];
+};
+
+const RecentArticles: React.FC<RecentArticlesProps> = ({ articles }) => {
     return (
         <Card className="h-full flex flex-col">
             <CardHeader>
@@ -60,36 +45,46 @@ const RecentArticles: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {dummyArticles.map((a, i) => (
-                                <tr
-                                    key={a.id}
-                                    className={`border-b dark:border-gray-700 ${
-                                        i % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-900'
-                                    }`}
-                                >
-                                    <td className="px-5 py-3 whitespace-nowrap font-semibold text-gray-900 dark:text-gray-100">
-                                        {a.title}
-                                    </td>
-                                    <td className="px-5 py-3 whitespace-nowrap text-gray-700 dark:text-gray-200">
-                                        {a.category}
-                                    </td>
-                                    <td className="px-5 py-3 whitespace-nowrap text-gray-600 dark:text-gray-300">
-                                        {a.date}
-                                    </td>
-                                    <td className="px-5 py-3 whitespace-nowrap">
-                                        <div className="flex flex-wrap gap-2">
-                                            {a.tags.map((tag) => (
-                                                <span
-                                                    key={tag}
-                                                    className="inline-block bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-2 py-0.5 rounded text-xs font-medium"
-                                                >
-                                                    {tag}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                            {articles.map((a) => {
+                                const title = getStringField(a, 'title') || a.slug;
+                                const categories = getArrayField(a, 'categories');
+                                const date = getStringField(a, 'date');
+                                const tags = getArrayField(a, 'tags');
+                                return (
+                                    <tr key={a.slug} className="border-b dark:border-gray-700">
+                                        <td className="px-5 py-3 whitespace-nowrap font-semibold text-gray-900 dark:text-gray-100">
+                                            {title}
+                                        </td>
+                                        <td className="px-5 py-3 whitespace-nowrap text-gray-700 dark:text-gray-200">
+                                            <div className="flex flex-wrap gap-2">
+                                                {categories.map((cat) => (
+                                                    <span
+                                                        key={cat}
+                                                        className="inline-block bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 px-2 py-0.5 rounded text-xs font-medium"
+                                                    >
+                                                        {cat}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-3 whitespace-nowrap text-gray-600 dark:text-gray-300">
+                                            {date}
+                                        </td>
+                                        <td className="px-5 py-3 whitespace-nowrap">
+                                            <div className="flex flex-wrap gap-2">
+                                                {tags.map((tag) => (
+                                                    <span
+                                                        key={tag}
+                                                        className="inline-block bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-2 py-0.5 rounded text-xs font-medium"
+                                                    >
+                                                        {tag}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>

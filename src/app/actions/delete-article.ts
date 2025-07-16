@@ -1,28 +1,7 @@
 'use server';
 
-import { getCmsConfig, updateCacheForContent } from '@/lib/content';
+import { getCmsConfig, updateCacheForContent, getAllContentTypes } from '@/lib/content';
 import { getOctokitWithAuth } from '@/lib/github-api';
-
-// getAllContentTypesを追加でインポート
-const getAllContentTypes = async () => {
-    const config = await getCmsConfig();
-    const contentTypes = [...config.content];
-    if (config.draftDirectory) {
-        // 既にcontentにdraftDirectoryが含まれていない場合のみ追加
-        const exists = contentTypes.some((c) => c.directory === config.draftDirectory);
-        if (!exists) {
-            contentTypes.push({
-                directory: config.draftDirectory,
-                articleFile: 'index.md',
-                metaCache: {
-                    type: 'json',
-                    path: `${config.draftDirectory}/index.json`
-                }
-            });
-        }
-    }
-    return contentTypes;
-};
 
 interface DeleteArticleParams {
     slug: string;
@@ -43,14 +22,14 @@ export const deleteArticle = async ({ slug, directory }: DeleteArticleParams): P
         let isLastArticle = false;
         let cachePath = '';
         let cacheSha = '';
-        
+
         console.log('削除対象:', { slug, directory });
         console.log('見つかったcontentType:', contentType);
-        
+
         if (contentType?.metaCache?.path) {
             cachePath = contentType.metaCache.path;
             console.log('キャッシュパス:', cachePath);
-            
+
             // index.jsonの中身を取得
             try {
                 const { data: cacheFile } = await octokit.repos.getContent({
@@ -65,7 +44,7 @@ export const deleteArticle = async ({ slug, directory }: DeleteArticleParams): P
                 }
                 const arr = cacheContent ? JSON.parse(cacheContent) : [];
                 console.log('index.json内の記事数:', arr.length);
-                
+
                 if (Array.isArray(arr) && arr.length === 1 && 'sha' in cacheFile) {
                     isLastArticle = true;
                     cacheSha = cacheFile.sha;

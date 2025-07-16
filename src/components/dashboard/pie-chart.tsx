@@ -42,6 +42,8 @@ export const ChartPieDonutText: React.FC<ChartPieDonutTextProps> = ({ data }) =>
                                 cx="50%"
                                 cy="42%"
                                 strokeWidth={5}
+                                startAngle={90}
+                                endAngle={-270}
                             >
                                 {data.map((entry) => (
                                     <Cell key={entry.label} fill={entry.color} />

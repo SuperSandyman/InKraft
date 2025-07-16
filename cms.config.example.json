@@ -1,5 +1,5 @@
 {
-    "targetRepository": "SuperSandyman/sandyman.dev-content",
+    "targetRepository": "YOUR_GITHUB_USERNAME/YOUR_CONTENT_REPO",
     "draftDirectory": "draft",
     "content": [
         {
@@ -12,12 +12,12 @@
             }
         },
         {
-            "directory": "scraps",
+            "directory": "memo",
             "articleFile": "index.md",
             "imageDirInsideContent": true,
             "metaCache": {
                 "type": "json",
-                "path": "scraps/index.json"
+                "path": "memo/index.json"
             }
         }
     ]

@@ -1,22 +1,36 @@
 'use client';
 
+import * as React from 'react';
+
 import HeatMap from '@uiw/react-heat-map';
-import { subYears } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Content } from '@/lib/content';
 
-export type HeatmapValue = { date: string; count: number };
+export interface HeatmapValue {
+    date: string;
+    count: number;
+}
 
-export default function GitHubHeatmap() {
+interface GitHubHeatmapProps {
+    articles: Content[];
+}
+
+const getDateCountMap = (articles: Content[]): HeatmapValue[] => {
+    const dateCount: Record<string, number> = {};
+    articles.forEach((a) => {
+        const date = typeof a.date === 'string' ? a.date.replace(/-/g, '/') : '';
+        if (date) {
+            dateCount[date] = (dateCount[date] || 0) + 1;
+        }
+    });
+    return Object.entries(dateCount).map(([date, count]) => ({ date, count }));
+};
+
+const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ articles }) => {
     const endDate = new Date();
-    const startDate = subYears(endDate, 1);
-    // 仮データ: 直近5日分のみ例示（実際は1年分を生成する想定）
-    const dummyValues: HeatmapValue[] = [
-        { date: '2025/05/30', count: 2 },
-        { date: '2025/05/31', count: 4 },
-        { date: '2025/06/01', count: 1 },
-        { date: '2025/06/02', count: 0 },
-        { date: '2025/06/03', count: 3 }
-    ];
+    const startDate = new Date(endDate);
+    startDate.setFullYear(endDate.getFullYear() - 1);
+    const values = getDateCountMap(articles);
 
     return (
         <Card className="h-full flex flex-col">
@@ -26,7 +40,7 @@ export default function GitHubHeatmap() {
             <CardContent className="flex-1 flex flex-col justify-between p-4">
                 <div className="overflow-x-auto">
                     <HeatMap
-                        value={dummyValues}
+                        value={values}
                         startDate={startDate}
                         endDate={endDate}
                         width="100%"
@@ -49,4 +63,6 @@ export default function GitHubHeatmap() {
             </CardContent>
         </Card>
     );
-}
+};
+
+export default GitHubHeatmap;
