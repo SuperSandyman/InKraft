@@ -31,22 +31,5 @@
         "multiple": false,
         "required": true,
         "description": "記事の公開日を指定します。"
-    },
-    {
-        "name": "date",
-        "label": "更新日",
-        "type": "date",
-        "format": "yyyy/MM/dd",
-        "multiple": false,
-        "required": true,
-        "description": "記事の更新日を指定しますwww"
-    },
-    {
-        "name": "draft",
-        "label": "下書き",
-        "type": "boolean",
-        "multiple": false,
-        "required": false,
-        "description": "true にすると未公開扱いになります。"
     }
 ]

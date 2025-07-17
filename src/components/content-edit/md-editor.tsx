@@ -4,6 +4,9 @@ import { useRef, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import type { ICommand } from '@uiw/react-md-editor';
 
+import '@uiw/react-md-editor/markdown-editor.css';
+import '@uiw/react-markdown-preview/markdown.css';
+
 // MDEditorはSSR非対応のため動的インポート
 const MDEditor = dynamic(() => import('@uiw/react-md-editor').then((mod) => mod.default), { ssr: false });
 
