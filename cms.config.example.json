@@ -12,8 +12,8 @@
             }
         },
         {
-            "directory": "scraps",
-            "articleFile": "index.md",
+            "directory": "memo",
+            "articleFile": "memo.md",
             "imageDirInsideContent": true,
             "metaCache": {
                 "type": "json",
