@@ -5,7 +5,7 @@
         "type": "string",
         "multiple": false,
         "required": true,
-        "description": "記事のタイトルです。1行の文字列として記述します。"
+        "description": "記事のタイトルです。"
     },
     {
         "name": "tags",
@@ -39,7 +39,7 @@
         "format": "yyyy/MM/dd",
         "multiple": false,
         "required": true,
-        "description": "記事の更新日を指定しますwww"
+        "description": "記事の更新日を指定します。"
     },
     {
         "name": "draft",

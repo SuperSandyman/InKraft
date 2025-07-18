@@ -13,7 +13,7 @@
         },
         {
             "directory": "memo",
-            "articleFile": "index.md",
+            "articleFile": "memo.md",
             "imageDirInsideContent": true,
             "metaCache": {
                 "type": "json",
