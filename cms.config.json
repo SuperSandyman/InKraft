@@ -20,5 +20,16 @@
                 "path": "scraps/index.json"
             }
         }
-    ]
+    ],
+    "webhooks": {
+        "enabled": true,
+        "endpoints": [
+            {
+                "name": "test-webhook",
+                "url": "https://httpbin.org/post",
+                "type": "custom",
+                "events": ["push"]
+            }
+        ]
+    }
 }
