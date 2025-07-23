@@ -6,6 +6,17 @@ import type { Octokit } from '@octokit/rest';
 
 import { getOctokitWithAuth } from './github-api';
 
+interface WebhookConfig {
+    enabled: boolean;
+    secret?: string;
+    endpoints?: Array<{
+        name: string;
+        url: string;
+        type: 'vercel' | 'netlify' | 'custom';
+        events?: string[];
+    }>;
+}
+
 interface CmsConfig {
     targetRepository: string;
     branch?: string;
@@ -17,6 +28,7 @@ interface CmsConfig {
             path: string;
         };
     }>;
+    webhooks?: WebhookConfig;
 }
 
 // サーバーサイドでローカルの cms.config.json を読み込む

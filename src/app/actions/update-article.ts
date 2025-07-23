@@ -5,6 +5,7 @@ import matter from 'gray-matter';
 import { getCmsConfig, updateCacheForContent } from '@/lib/content';
 import { getOctokitWithAuth } from '@/lib/github-api';
 import { replaceRawUrlWithFileNameInMarkdown } from '@/lib/github-path';
+import { triggerCmsWebhook } from '@/lib/webhook';
 
 interface UpdateArticleParams {
     slug: string;
@@ -109,6 +110,13 @@ export const updateArticle = async ({
             // index.json キャッシュを更新
             await updateCacheForContent(directory, slug, frontmatter, contentForSave, 'update');
         }
+
+        // Webhookを発火
+        await triggerCmsWebhook('update', {
+            slug,
+            directory,
+            repository: config.targetRepository
+        });
 
         return { success: true };
     } catch (error) {
