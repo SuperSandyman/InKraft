@@ -6,15 +6,24 @@ import { streamText } from 'ai';
 export const runtime = 'nodejs';
 
 // 環境変数から認証情報を取得
-const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON!);
+const credentialsJson = process.env.GOOGLE_CREDENTIALS_JSON;
 const project = process.env.GOOGLE_VERTEX_PROJECT_ID;
 const location = process.env.GOOGLE_VERTEX_LOCATION;
 
-const vertex = createVertex({
-    project,
-    location,
-    googleAuthOptions: { credentials }
-});
+let vertex: ReturnType<typeof createVertex> | null = null;
+
+if (credentialsJson && project && location) {
+    try {
+        const credentials = JSON.parse(credentialsJson);
+        vertex = createVertex({
+            project,
+            location,
+            googleAuthOptions: { credentials }
+        });
+    } catch (error) {
+        console.warn('Failed to initialize Google Vertex AI:', error);
+    }
+}
 
 // 記事テンプレ生成用プロンプト
 const templatePrompt = `
@@ -34,9 +43,19 @@ const templatePrompt = `
 
 export async function POST(req: NextRequest) {
     try {
+        if (!vertex) {
+            return new Response(JSON.stringify({ error: 'AI サービスが設定されていません。' }), { 
+                status: 503,
+                headers: { 'content-type': 'application/json' }
+            });
+        }
+
         const { theme } = await req.json();
         if (!theme || typeof theme !== 'string') {
-            return new Response(JSON.stringify({ error: 'テーマを指定してください。' }), { status: 400 });
+            return new Response(JSON.stringify({ error: 'テーマを指定してください。' }), { 
+                status: 400,
+                headers: { 'content-type': 'application/json' }
+            });
         }
 
         const result = await streamText({
@@ -51,7 +70,8 @@ export async function POST(req: NextRequest) {
         });
     } catch (error) {
         return new Response(JSON.stringify({ error: 'テンプレ生成に失敗しました。', detail: String(error) }), {
-            status: 500
+            status: 500,
+            headers: { 'content-type': 'application/json' }
         });
     }
 }

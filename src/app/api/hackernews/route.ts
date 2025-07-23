@@ -18,14 +18,24 @@ interface NewsItem {
 let memoryCache: { data: NewsItem[]; expires: number } | null = null;
 
 // Vertex AIの初期化（api/ai/route.tsと同じ方式）
-const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON!);
+const credentialsJson = process.env.GOOGLE_CREDENTIALS_JSON;
 const project = process.env.GOOGLE_VERTEX_PROJECT_ID;
 const location = process.env.GOOGLE_VERTEX_LOCATION;
-const vertex = createVertex({
-    project,
-    location,
-    googleAuthOptions: { credentials }
-});
+
+let vertex: ReturnType<typeof createVertex> | null = null;
+
+if (credentialsJson && project && location) {
+    try {
+        const credentials = JSON.parse(credentialsJson);
+        vertex = createVertex({
+            project,
+            location,
+            googleAuthOptions: { credentials }
+        });
+    } catch (error) {
+        console.warn('Failed to initialize Google Vertex AI for hackernews:', error);
+    }
+}
 
 async function fetchHackerNewsTopStories(limit = 15) {
     const idsRes = await fetch(HN_API);
@@ -41,12 +51,20 @@ async function fetchHackerNewsTopStories(limit = 15) {
 }
 
 async function translateTitle(title: string): Promise<string> {
+    if (!vertex) {
+        return title; // Return original title if AI is not available
+    }
     // タイトル翻訳（日本語論文タイトルとして自然で簡潔な表現にしてください。複数案は不要です）
-    const { text: translated } = await generateText({
-        model: vertex('gemini-2.0-flash-lite-001'),
-        prompt: `次の英文タイトルを日本語の論文タイトルとして自然で簡潔な表現に翻訳してください。複数案は不要です。\n\n${title}`
-    });
-    return translated;
+    try {
+        const { text: translated } = await generateText({
+            model: vertex('gemini-2.0-flash-lite-001'),
+            prompt: `次の英文タイトルを日本語の論文タイトルとして自然で簡潔な表現に翻訳してください。複数案は不要です。\n\n${title}`
+        });
+        return translated;
+    } catch (error) {
+        console.warn('Translation failed:', error);
+        return title; // Return original title on error
+    }
 }
 
 export async function GET() {
