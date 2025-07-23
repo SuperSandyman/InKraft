@@ -3,7 +3,6 @@ import { getCmsConfig } from './content';
 export interface WebhookEndpoint {
     name: string;
     url: string;
-    type: 'vercel' | 'netlify' | 'custom';
     events?: string[];
 }
 
@@ -34,7 +33,13 @@ export interface GitHubCommit {
 export const getWebhookConfig = async (): Promise<WebhookConfig | null> => {
     try {
         const config = await getCmsConfig();
-        return config.webhooks || null;
+        const webhooks = config.webhooks || null;
+        if (!webhooks) return null;
+        // secretは環境変数優先
+        return {
+            ...webhooks,
+            secret: process.env.WEBHOOK_SECRET || webhooks.secret || undefined
+        };
     } catch (error) {
         console.error('Failed to get webhook config:', error);
         return null;
@@ -74,11 +79,60 @@ export const validateWebhookConfig = (config: WebhookConfig): string[] => {
             if (!endpoint.url) {
                 errors.push(`Endpoint ${index}: url is required`);
             }
-            if (!['vercel', 'netlify', 'custom'].includes(endpoint.type)) {
-                errors.push(`Endpoint ${index}: type must be 'vercel', 'netlify', or 'custom'`);
-            }
         });
     }
 
     return errors;
+};
+
+/**
+ * CMSアクション（create/update/delete）時にWebhookを発火
+ */
+export const triggerCmsWebhook = async (
+    eventType: 'create' | 'update' | 'delete',
+    data: {
+        slug: string;
+        directory: string;
+        repository?: string;
+    }
+): Promise<void> => {
+    try {
+        const config = await getWebhookConfig();
+
+        if (!config?.enabled || !config.endpoints) {
+            return;
+        }
+
+        const webhookEvent = createWebhookPayload({
+            eventType,
+            repository: data.repository,
+            timestamp: new Date().toISOString()
+        });
+
+        const filteredEndpoints = config.endpoints.filter((endpoint) => shouldProcessEvent(eventType, endpoint));
+        const promises = filteredEndpoints.map(async (endpoint: WebhookEndpoint) => {
+            try {
+                await fetch(endpoint.url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'User-Agent': 'InKraft-CMS/1.0'
+                    },
+                    body: JSON.stringify({
+                        ...webhookEvent,
+                        cms: {
+                            slug: data.slug,
+                            directory: data.directory,
+                            action: eventType
+                        }
+                    })
+                });
+            } catch {
+                // ignore error
+            }
+        });
+        await Promise.allSettled(promises);
+    } catch {
+        // ignore error
+    }
 };

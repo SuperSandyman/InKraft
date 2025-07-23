@@ -1,5 +1,5 @@
 {
-    "targetRepository": "SuperSandyman/sandyman.dev-content",
+    "targetRepository": "your-github-username/your-repository-name",
     "draftDirectory": "draft",
     "content": [
         {
@@ -17,31 +17,17 @@
             "imageDirInsideContent": true,
             "metaCache": {
                 "type": "json",
-                "path": "scraps/index.json"
+                "path": "memo/index.json"
             }
         }
     ],
     "webhooks": {
         "enabled": true,
-        "secret": "your-webhook-secret-here",
         "endpoints": [
             {
                 "name": "vercel-deploy",
                 "url": "https://api.vercel.com/v1/integrations/deploy/your-deploy-hook-url",
-                "type": "vercel",
-                "events": ["push", "create", "delete"]
-            },
-            {
-                "name": "netlify-deploy",
-                "url": "https://api.netlify.com/build_hooks/your-build-hook-id",
-                "type": "netlify",
-                "events": ["push"]
-            },
-            {
-                "name": "custom-webhook",
-                "url": "https://your-custom-endpoint.com/webhook",
-                "type": "custom",
-                "events": ["push", "create", "delete"]
+                "events": ["create", "update", "delete"]
             }
         ]
     }

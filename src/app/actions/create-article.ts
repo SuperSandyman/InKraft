@@ -4,6 +4,7 @@ import matter from 'gray-matter';
 
 import { getCmsConfig, updateCacheForContent } from '@/lib/content';
 import { getOctokitWithAuth } from '@/lib/github-api';
+import { triggerCmsWebhook } from '@/lib/webhook';
 
 interface CreateArticleParams {
     slug: string;
@@ -60,6 +61,13 @@ export const createArticle = async ({
 
         // index.json キャッシュを更新
         await updateCacheForContent(directory, sanitizedSlug, frontmatter, content, 'create');
+
+        // Webhookを発火
+        await triggerCmsWebhook('create', {
+            slug: sanitizedSlug,
+            directory,
+            repository: config.targetRepository
+        });
 
         return { success: true };
     } catch (error) {
