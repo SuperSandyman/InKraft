@@ -2,6 +2,7 @@
 
 import { getCmsConfig, updateCacheForContent, getAllContentTypes } from '@/lib/content';
 import { getOctokitWithAuth } from '@/lib/github-api';
+import { triggerCmsWebhook } from '@/lib/webhook';
 
 interface DeleteArticleParams {
     slug: string;
@@ -94,6 +95,13 @@ export const deleteArticle = async ({ slug, directory }: DeleteArticleParams): P
             // それ以外はindex.jsonを更新
             await updateCacheForContent(directory, slug, {}, '', 'delete');
         }
+
+        // Webhookを発火
+        await triggerCmsWebhook('delete', {
+            slug,
+            directory,
+            repository: config.targetRepository
+        });
 
         return true;
     } catch {

@@ -1,5 +1,5 @@
 {
-    "targetRepository": "SuperSandyman/sandyman.dev-content",
+    "targetRepository": "your-github-username/your-repository-name",
     "draftDirectory": "draft",
     "content": [
         {
@@ -17,8 +17,18 @@
             "imageDirInsideContent": true,
             "metaCache": {
                 "type": "json",
-                "path": "scraps/index.json"
+                "path": "memo/index.json"
             }
         }
-    ]
+    ],
+    "webhooks": {
+        "enabled": true,
+        "endpoints": [
+            {
+                "name": "vercel-deploy",
+                "url": "https://api.vercel.com/v1/integrations/deploy/your-deploy-hook-url",
+                "events": ["create", "update", "delete"]
+            }
+        ]
+    }
 }
