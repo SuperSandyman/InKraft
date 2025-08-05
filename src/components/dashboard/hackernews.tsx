@@ -43,13 +43,11 @@ const HackerNewsCard: React.FC = () => {
     const pageItems = newsList.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
 
     return (
-        <Card className="h-full flex flex-col">
+        <Card className="sm:h-full h-auto flex flex-col">
             <CardHeader>
                 <CardTitle className="text-lg font-semibold">ニュース（HackerNewsより）</CardTitle>
             </CardHeader>
-
-            {/* ① リスト部分だけスクロール可能 */}
-            <CardContent className="flex-1 overflow-y-auto pt-2">
+            <CardContent className="flex-1 overflow-y-auto pt-2 min-h-0">
                 {loading ? (
                     <div className="text-sm text-muted-foreground">読み込み中...</div>
                 ) : newsList.length === 0 ? (
@@ -72,10 +70,8 @@ const HackerNewsCard: React.FC = () => {
                     </ul>
                 )}
             </CardContent>
-
-            {/* ② ナビ部分は常に底に表示 */}
             {!loading && newsList.length > 0 && (
-                <CardFooter className="px-4 py-2 bg-white flex justify-between">
+                <CardFooter className="px-4 py-2 flex justify-between">
                     <Button
                         size="sm"
                         variant="outline"

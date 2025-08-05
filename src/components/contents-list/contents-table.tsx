@@ -55,13 +55,13 @@ const ContentsTable = ({ contents }: ContentsTableProps) => {
             <table className="w-full">
                 <thead>
                     <tr className="border-b">
-                        <th className="text-left py-3 px-4 font-medium">タイトル</th>
-                        <th className="text-left py-3 px-4 font-medium">ステータス</th>
-                        <th className="text-left py-3 px-4 font-medium">カテゴリ</th>
-                        <th className="text-left py-3 px-4 font-medium">著者</th>
-                        <th className="text-left py-3 px-4 font-medium">公開日</th>
-                        <th className="text-left py-3 px-4 font-medium">更新日</th>
-                        <th className="text-left py-3 px-4 font-medium">操作</th>
+                        <th className="text-left py-3 px-4 font-medium whitespace-nowrap">タイトル</th>
+                        <th className="text-left py-3 px-4 font-medium whitespace-nowrap">ステータス</th>
+                        <th className="text-left py-3 px-4 font-medium whitespace-nowrap">カテゴリ</th>
+                        <th className="text-left py-3 px-4 font-medium whitespace-nowrap">著者</th>
+                        <th className="text-left py-3 px-4 font-medium whitespace-nowrap">公開日</th>
+                        <th className="text-left py-3 px-4 font-medium whitespace-nowrap">更新日</th>
+                        <th className="text-left py-3 px-4 font-medium whitespace-nowrap">操作</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -77,11 +77,16 @@ const ContentsTable = ({ contents }: ContentsTableProps) => {
 
                         return (
                             <tr key={content.slug} className="border-b hover:bg-muted/50">
-                                <td className="py-3 px-4">
+                                <td className="py-3 px-4 whitespace-nowrap">
                                     <div>
                                         <div className="font-medium line-clamp-1">{title}</div>
                                         <div className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                                            {content.excerpt}
+                                            <span className="block sm:hidden">
+                                                {content.excerpt && content.excerpt.length > 10
+                                                    ? `${content.excerpt.slice(0, 30)}…`
+                                                    : content.excerpt}
+                                            </span>
+                                            <span className="hidden sm:block">{content.excerpt}</span>
                                         </div>
                                         <div className="flex gap-1 mt-2">
                                             {tags.slice(0, 3).map((tag) => (
@@ -97,16 +102,18 @@ const ContentsTable = ({ contents }: ContentsTableProps) => {
                                         </div>
                                     </div>
                                 </td>
-                                <td className="py-3 px-4">
+                                <td className="py-3 px-4 whitespace-nowrap">
                                     <Badge variant={getStatusBadgeVariant(status)}>{getStatusText(status)}</Badge>
                                 </td>
-                                <td className="py-3 px-4">
+                                <td className="py-3 px-4 whitespace-nowrap">
                                     <Badge variant="secondary">{categories || '-'}</Badge>
                                 </td>
-                                <td className="py-3 px-4 text-sm">{author || '-'}</td>
-                                <td className="py-3 px-4 text-sm">{formatDate(publishedAt) || '-'}</td>
-                                <td className="py-3 px-4 text-sm">{formatDate(updatedAt) || '-'}</td>
-                                <td className="py-3 px-4">
+                                <td className="py-3 px-4 text-sm whitespace-nowrap">{author || '-'}</td>
+                                <td className="py-3 px-4 text-sm whitespace-nowrap">
+                                    {formatDate(publishedAt) || '-'}
+                                </td>
+                                <td className="py-3 px-4 text-sm whitespace-nowrap">{formatDate(updatedAt) || '-'}</td>
+                                <td className="py-3 px-4 whitespace-nowrap">
                                     <div className="flex gap-2">
                                         <a href={`/contents/${content.slug}/edit`}>
                                             <Button variant="outline" size="sm">
