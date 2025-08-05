@@ -21,25 +21,25 @@ const getArrayField = (content: Content, fieldName: string): string[] => {
 
 const RecentArticles: React.FC<RecentArticlesProps> = ({ articles }) => {
     return (
-        <Card className="h-full flex flex-col">
+        <Card className="sm:h-full h-auto flex flex-col">
             <CardHeader>
                 <CardTitle className="text-lg font-semibold">最近の記事</CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col pt-2">
+            <CardContent>
                 <div className="overflow-x-auto">
                     <table className="min-w-full table-auto text-sm rounded-xl">
                         <thead>
                             <tr className="bg-gray-100 dark:bg-gray-700">
-                                <th className="px-5 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">
+                                <th className="px-5 py-3 text-left font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap">
                                     タイトル
                                 </th>
-                                <th className="px-5 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">
+                                <th className="px-5 py-3 text-left font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap">
                                     カテゴリ
                                 </th>
-                                <th className="px-5 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">
+                                <th className="px-5 py-3 text-left font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap">
                                     日付
                                 </th>
-                                <th className="px-5 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">
+                                <th className="px-5 py-3 text-left font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap">
                                     タグ
                                 </th>
                             </tr>
@@ -56,7 +56,7 @@ const RecentArticles: React.FC<RecentArticlesProps> = ({ articles }) => {
                                             {title}
                                         </td>
                                         <td className="px-5 py-3 whitespace-nowrap text-gray-700 dark:text-gray-200">
-                                            <div className="flex flex-wrap gap-2">
+                                            <div className="flex gap-2">
                                                 {categories.map((cat) => (
                                                     <span
                                                         key={cat}
@@ -71,7 +71,7 @@ const RecentArticles: React.FC<RecentArticlesProps> = ({ articles }) => {
                                             {date}
                                         </td>
                                         <td className="px-5 py-3 whitespace-nowrap">
-                                            <div className="flex flex-wrap gap-2">
+                                            <div className="flex gap-2">
                                                 {tags.map((tag) => (
                                                     <span
                                                         key={tag}

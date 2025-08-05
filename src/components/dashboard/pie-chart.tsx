@@ -21,12 +21,12 @@ export const ChartPieDonutText: React.FC<ChartPieDonutTextProps> = ({ data }) =>
     }, [data]);
 
     return (
-        <Card className="h-full flex flex-col">
+        <Card className="sm:h-full h-auto flex flex-col">
             <CardHeader>
                 <CardTitle className="text-lg font-semibold">コンテンツ分布</CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 flex items-center justify-center min-h-0 min-w-0">
-                <div className="flex-none flex items-center justify-center min-w-0 min-h-0">
+            <CardContent className="flex-1 flex items-center justify-center">
+                <div className="flex-none flex items-center justify-center">
                     <ChartContainer
                         config={chartConfig}
                         className="aspect-square w-full min-w-[240px] max-w-[240px] min-h-[240px] max-h-[240px] flex items-center justify-center"

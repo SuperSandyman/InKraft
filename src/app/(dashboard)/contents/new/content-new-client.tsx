@@ -129,14 +129,14 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
                     <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
                     <Breadcrumb>
                         <BreadcrumbList>
-                            <BreadcrumbItem className="hidden md:block">
+                            <BreadcrumbItem>
                                 <BreadcrumbLink href="/">ダッシュボード</BreadcrumbLink>
                             </BreadcrumbItem>
-                            <BreadcrumbSeparator className="hidden md:block" />
+                            <BreadcrumbSeparator />
                             <BreadcrumbItem>
                                 <BreadcrumbLink href="/contents">記事一覧</BreadcrumbLink>
                             </BreadcrumbItem>
-                            <BreadcrumbSeparator className="hidden md:block" />
+                            <BreadcrumbSeparator />
                             <BreadcrumbItem>
                                 <BreadcrumbPage>新規記事作成</BreadcrumbPage>
                             </BreadcrumbItem>

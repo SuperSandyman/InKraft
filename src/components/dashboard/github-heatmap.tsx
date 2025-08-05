@@ -33,11 +33,11 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ articles }) => {
     const values = getDateCountMap(articles);
 
     return (
-        <Card className="h-full flex flex-col">
+        <Card className="sm:h-full h-auto flex flex-col">
             <CardHeader>
                 <CardTitle className="text-lg font-semibold">アクティビティ</CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col justify-between p-4">
+            <CardContent className="flex-1 flex flex-col justify-between p-4 min-h-0">
                 <div className="overflow-x-auto">
                     <HeatMap
                         value={values}
