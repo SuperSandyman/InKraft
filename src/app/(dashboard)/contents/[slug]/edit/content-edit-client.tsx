@@ -11,14 +11,7 @@ import { updateArticle } from '@/app/actions/update-article';
 
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator
-} from '@/components/ui/breadcrumb';
+import Breadcrumbs from '@/components/common/breadcrumbs';
 
 interface GithubInfo {
     owner: string;
@@ -121,27 +114,14 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo }: Content
                 <div className="flex items-center gap-2 px-4">
                     <SidebarTrigger className="-ml-1" />
                     <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-                    <Breadcrumb>
-                        <BreadcrumbList>
-                            <BreadcrumbItem>
-                                <BreadcrumbLink href="/">ダッシュボード</BreadcrumbLink>
-                            </BreadcrumbItem>
-                            <BreadcrumbSeparator />
-                            <BreadcrumbItem>
-                                <BreadcrumbLink href="/contents">記事一覧</BreadcrumbLink>
-                            </BreadcrumbItem>
-                            <BreadcrumbSeparator />
-                            <BreadcrumbItem>
-                                <BreadcrumbLink href="#">
-                                    {typeof meta.title === 'string' ? meta.title : '...'}
-                                </BreadcrumbLink>
-                            </BreadcrumbItem>
-                            <BreadcrumbSeparator />
-                            <BreadcrumbItem>
-                                <BreadcrumbPage>編集</BreadcrumbPage>
-                            </BreadcrumbItem>
-                        </BreadcrumbList>
-                    </Breadcrumb>
+                    <Breadcrumbs
+                        items={[
+                            { label: 'ダッシュボード', href: '/' },
+                            { label: '記事一覧', href: '/contents' },
+                            { label: typeof meta.title === 'string' ? meta.title : '...', href: undefined },
+                            { label: '編集', isCurrent: true }
+                        ]}
+                    />
                 </div>
             </header>
             <div className="flex flex-1 flex-col gap-6 p-4 pt-0">

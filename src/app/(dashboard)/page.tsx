@@ -1,7 +1,7 @@
 import { fetchContentTypeCounts } from '@/lib/content-stats';
 import { fetchAllContentsFromGitHub } from '@/lib/content';
 import { ChartPieDonutText } from '@/components/dashboard/pie-chart';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from '@/components/ui/breadcrumb';
+import Breadcrumbs from '@/components/common/breadcrumbs';
 import GitHubHeatmap from '@/components/dashboard/github-heatmap';
 import HackerNewsCard from '@/components/dashboard/hackernews';
 import RecentArticles from '@/components/dashboard/recent-articles';
@@ -22,13 +22,7 @@ export default async function Page() {
                 <div className="flex items-center gap-2 px-4">
                     <SidebarTrigger className="-ml-1" />
                     <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-                    <Breadcrumb>
-                        <BreadcrumbList>
-                            <BreadcrumbItem>
-                                <BreadcrumbLink href="/">ホーム</BreadcrumbLink>
-                            </BreadcrumbItem>
-                        </BreadcrumbList>
-                    </Breadcrumb>
+                    <Breadcrumbs items={[{ label: 'ホーム', href: '/' }]} />
                 </div>
             </header>
             <div className="flex flex-1 flex-col gap-4 p-4 pt-0">

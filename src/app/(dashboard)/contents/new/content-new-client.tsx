@@ -11,14 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator
-} from '@/components/ui/breadcrumb';
+// パンくずは共通コンポーネントを使用
+import Breadcrumbs from '@/components/common/breadcrumbs';
 
 interface ContentNewClientProps {
     schema: FrontmatterSchema;
@@ -127,21 +121,13 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
                 <div className="flex items-center gap-2 px-4">
                     <SidebarTrigger className="-ml-1" />
                     <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-                    <Breadcrumb>
-                        <BreadcrumbList>
-                            <BreadcrumbItem>
-                                <BreadcrumbLink href="/">ダッシュボード</BreadcrumbLink>
-                            </BreadcrumbItem>
-                            <BreadcrumbSeparator />
-                            <BreadcrumbItem>
-                                <BreadcrumbLink href="/contents">記事一覧</BreadcrumbLink>
-                            </BreadcrumbItem>
-                            <BreadcrumbSeparator />
-                            <BreadcrumbItem>
-                                <BreadcrumbPage>新規記事作成</BreadcrumbPage>
-                            </BreadcrumbItem>
-                        </BreadcrumbList>
-                    </Breadcrumb>
+                    <Breadcrumbs
+                        items={[
+                            { label: 'ダッシュボード', href: '/' },
+                            { label: '記事一覧', href: '/contents' },
+                            { label: '新規記事作成', isCurrent: true }
+                        ]}
+                    />
                 </div>
             </header>
             <div className="flex flex-1 flex-col gap-6 p-4 pt-0">
