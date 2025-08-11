@@ -6,7 +6,7 @@ import Breadcrumbs from '@/components/common/breadcrumbs';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import NewArticleButton from '@/components/contents-list/new-article-button';
-import cmsConfig from '../../../../cms.config.json';
+import { getCmsConfig } from '@/lib/content';
 
 interface ContentsPageProps {
     searchParams: Promise<{
@@ -19,6 +19,7 @@ export default async function ContentsPage({ searchParams }: ContentsPageProps) 
     const { status = 'all', page = '1' } = await searchParams;
     const pageNumber = Number(page) || 1;
     const limit = 10;
+    const cmsConfig = await getCmsConfig();
     // GitHubから全記事取得
     const allContents: Content[] = await fetchAllContentsFromGitHub();
     // 投稿日（date）降順でソート
