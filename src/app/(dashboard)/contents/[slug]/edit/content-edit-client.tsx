@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 import type { FrontmatterSchema, FrontmatterData } from '@/types/frontmatter';
@@ -11,14 +11,8 @@ import { updateArticle } from '@/app/actions/update-article';
 
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator
-} from '@/components/ui/breadcrumb';
+import Breadcrumbs from '@/components/common/breadcrumbs';
+import { useNavigationGuard } from '@/hooks/use-navigation-guard';
 
 interface GithubInfo {
     owner: string;
@@ -31,19 +25,35 @@ interface ContentEditClientProps {
     article: Content;
     fullContent?: string;
     githubInfo: GithubInfo;
+    directories?: string[];
 }
 
-const ContentEditClient = ({ schema, article, fullContent, githubInfo }: ContentEditClientProps) => {
+const normalizeMeta = (meta: FrontmatterData & { directory?: string }) => {
+    const entries: Array<[string, unknown]> = Object.entries(meta).map(([key, value]) => {
+        if (Array.isArray(value)) {
+            return [key, [...value]];
+        }
+        if (value === undefined || value === null) {
+            return [key, ''];
+        }
+        return [key, value];
+    });
+    entries.sort((a, b) => a[0].localeCompare(b[0]));
+    return Object.fromEntries(entries);
+};
+
+const ContentEditClient = ({ schema, article, fullContent, githubInfo, directories = [] }: ContentEditClientProps) => {
     const router = useRouter();
-    const [content, setContent] = useState<string>(() => {
-        // fullContentが提供されている場合はそれを使用、そうでなければfallback
+    const initialContentValue = useMemo(() => {
         if (fullContent) {
             return fullContent;
         }
         const title = typeof article.title === 'string' ? article.title : '';
         return `# ${title}\n\n${article.excerpt}`;
-    });
-    const [meta] = useState<FrontmatterData>(() => {
+    }, [article, fullContent]);
+    const [content, setContent] = useState<string>(initialContentValue);
+    const initialContentRef = useRef<string>(initialContentValue);
+    const initialMeta = useMemo(() => {
         const meta: FrontmatterData = {};
 
         // slugフィールドを強制的に追加
@@ -69,15 +79,32 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo }: Content
                 meta[field.name] = '';
             }
         });
-        return meta;
-    });
+        return {
+            ...meta,
+            directory: article.directory
+        };
+    }, [article, schema]);
+    const [formMeta, setFormMeta] = useState<FrontmatterData & { directory?: string }>(initialMeta);
+    const initialNormalizedMetaRef = useRef<Record<string, unknown>>(normalizeMeta(initialMeta));
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
 
+    useEffect(() => {
+        const normalizedCurrent = normalizeMeta(formMeta);
+        const metaChanged = JSON.stringify(normalizedCurrent) !== JSON.stringify(initialNormalizedMetaRef.current);
+        const contentChanged = content !== initialContentRef.current;
+        setHasUnsavedChanges(contentChanged || metaChanged);
+    }, [content, formMeta]);
+
+    useNavigationGuard(hasUnsavedChanges && !isSubmitting);
+
+    const handleContentChange = useCallback((value: string) => {
+        setContent(value);
+    }, []);
     const handleFormSubmit = async (formData: FrontmatterData & { directory?: string }) => {
         setIsSubmitting(true);
         try {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { directory: _, slug: newSlug, ...frontmatter } = formData;
+            const { directory: formDirectory, slug: newSlug, ...frontmatter } = formData;
 
             const sanitizedSlug =
                 typeof newSlug === 'string'
@@ -94,15 +121,25 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo }: Content
                 return;
             }
 
+            const targetDirectory =
+                typeof formDirectory === 'string' && formDirectory.trim() !== '' ? formDirectory : article.directory;
+
             const result = await updateArticle({
                 slug: sanitizedSlug,
-                directory: article.directory,
+                directory: targetDirectory,
                 frontmatter,
                 content,
-                originalSlug: article.slug
+                originalSlug: article.slug,
+                originalDirectory: article.directory
             });
 
             if (result.success) {
+                initialContentRef.current = content;
+                initialNormalizedMetaRef.current = normalizeMeta({
+                    ...frontmatter,
+                    slug: sanitizedSlug,
+                    directory: targetDirectory
+                });
                 router.push('/contents');
             } else {
                 alert(result.error || '保存に失敗しました');
@@ -115,33 +152,51 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo }: Content
         }
     };
 
+    const handleFormMetaChange = useCallback(
+        (data: FrontmatterData & { directory?: string }) => {
+            setFormMeta((prev) => {
+                const nextDirectory =
+                    typeof data.directory === 'string' && data.directory.trim() !== ''
+                        ? data.directory
+                        : typeof prev.directory === 'string'
+                        ? prev.directory
+                        : article.directory;
+                const nextSlug =
+                    typeof data.slug === 'string'
+                        ? data.slug
+                        : typeof prev.slug === 'string'
+                        ? prev.slug
+                        : article.slug;
+                return {
+                    ...prev,
+                    ...data,
+                    slug: nextSlug,
+                    directory: nextDirectory
+                };
+            });
+        },
+        [article.directory, article.slug]
+    );
+
+    const currentDirectory =
+        typeof formMeta.directory === 'string' && formMeta.directory !== '' ? formMeta.directory : article.directory;
+    const currentSlug = typeof formMeta.slug === 'string' && formMeta.slug !== '' ? formMeta.slug : article.slug;
+    const currentTitle = typeof formMeta.title === 'string' ? formMeta.title : '';
+
     return (
         <>
             <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
                 <div className="flex items-center gap-2 px-4">
                     <SidebarTrigger className="-ml-1" />
                     <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-                    <Breadcrumb>
-                        <BreadcrumbList>
-                            <BreadcrumbItem>
-                                <BreadcrumbLink href="/">ダッシュボード</BreadcrumbLink>
-                            </BreadcrumbItem>
-                            <BreadcrumbSeparator />
-                            <BreadcrumbItem>
-                                <BreadcrumbLink href="/contents">記事一覧</BreadcrumbLink>
-                            </BreadcrumbItem>
-                            <BreadcrumbSeparator />
-                            <BreadcrumbItem>
-                                <BreadcrumbLink href="#">
-                                    {typeof meta.title === 'string' ? meta.title : '...'}
-                                </BreadcrumbLink>
-                            </BreadcrumbItem>
-                            <BreadcrumbSeparator />
-                            <BreadcrumbItem>
-                                <BreadcrumbPage>編集</BreadcrumbPage>
-                            </BreadcrumbItem>
-                        </BreadcrumbList>
-                    </Breadcrumb>
+                    <Breadcrumbs
+                        items={[
+                            { label: 'ダッシュボード', href: '/' },
+                            { label: '記事一覧', href: '/contents' },
+                            { label: currentTitle || '...', href: undefined },
+                            { label: '編集', isCurrent: true }
+                        ]}
+                    />
                 </div>
             </header>
             <div className="flex flex-1 flex-col gap-6 p-4 pt-0">
@@ -156,10 +211,10 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo }: Content
                                 <h2 className="text-lg font-semibold mb-4">記事内容</h2>
                                 <MdEditor
                                     value={content}
-                                    onChange={setContent}
+                                    onChange={handleContentChange}
                                     height={700}
-                                    directory={article.directory}
-                                    slug={article.slug}
+                                    directory={currentDirectory}
+                                    slug={currentSlug}
                                     githubInfo={githubInfo}
                                 />
                             </div>
@@ -169,7 +224,9 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo }: Content
                                 schema={schema}
                                 onSubmit={handleFormSubmit}
                                 isSubmitting={isSubmitting}
-                                initialValues={meta}
+                                directories={directories}
+                                initialValues={initialMeta}
+                                onChange={handleFormMetaChange}
                             />
                         </div>
                     </div>

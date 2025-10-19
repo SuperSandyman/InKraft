@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 
 import type { FrontmatterSchema } from '@/types/frontmatter';
 import ContentEditClient from './content-edit-client';
-import { fetchContentBySlug } from '@/lib/content';
+import { fetchContentBySlug, getCmsConfig, getAllContentTypes } from '@/lib/content';
 import { replaceFileNameWithRawUrlInMarkdown } from '@/lib/github-path';
 
 interface PageProps {
@@ -31,25 +31,21 @@ export default async function ContentEditPage(props: PageProps) {
         notFound();
     }
 
-    // cms.config.json からリポジトリ情報取得
-    const configPath = path.join(process.cwd(), 'cms.config.json');
-    let owner = '';
-    let repo = '';
-    let branch = 'main';
+    // cms.config.json からリポジトリ情報取得（ローダー経由）
+    const cfg = await getCmsConfig();
+    const [owner, repo] = cfg.targetRepository.split('/');
+    const branch = cfg.branch || 'main';
+
+    // ディレクトリ一覧取得
+    let directories: string[] = [];
     try {
-        const configRaw = fs.readFileSync(configPath, 'utf-8');
-        const config = JSON.parse(configRaw);
-        if (config.targetRepository) {
-            const [o, r] = config.targetRepository.split('/');
-            owner = o;
-            repo = r;
-        }
-        if (config.branch) {
-            branch = config.branch;
-        }
-    } catch (e) {
-        console.error('cms.config.json の読み込みに失敗:', e);
-        notFound();
+        const types = await getAllContentTypes();
+        const candidates = types.map((t) => t.directory);
+        directories = cfg.draftDirectory
+            ? [cfg.draftDirectory, ...candidates.filter((dir) => dir !== cfg.draftDirectory)]
+            : candidates;
+    } catch (error) {
+        console.error('ディレクトリ一覧の取得に失敗しました:', error);
     }
 
     // 記事詳細データ取得（本文全体 + frontmatter）
@@ -81,6 +77,7 @@ export default async function ContentEditPage(props: PageProps) {
             schema={schema}
             article={article}
             fullContent={contentForEdit}
+            directories={directories}
             githubInfo={{ owner, repo, branch }}
         />
     );

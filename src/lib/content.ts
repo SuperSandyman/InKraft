@@ -3,39 +3,103 @@ import path from 'path';
 
 import matter from 'gray-matter';
 import type { Octokit } from '@octokit/rest';
+import { z } from 'zod';
 
 import { getOctokitWithAuth } from './github-api';
+
+interface WebhookEndpoint {
+    name: string;
+    url: string;
+    type?: 'vercel' | 'netlify' | 'custom';
+    events?: string[];
+}
 
 interface WebhookConfig {
     enabled: boolean;
     secret?: string;
-    endpoints?: Array<{
-        name: string;
-        url: string;
-        type: 'vercel' | 'netlify' | 'custom';
-        events?: string[];
-    }>;
+    endpoints?: WebhookEndpoint[];
 }
 
-interface CmsConfig {
+export interface ContentTypeConfigItem {
+    directory: string;
+    articleFile: string;
+    imageDirInsideContent?: boolean;
+    metaCache?: {
+        type: string;
+        path: string;
+    };
+}
+
+export interface CmsConfig {
     targetRepository: string;
     branch?: string;
-    content: Array<{
-        directory: string;
-        articleFile: string;
-        metaCache?: {
-            type: string;
-            path: string;
-        };
-    }>;
+    draftDirectory?: string;
+    content: ContentTypeConfigItem[];
     webhooks?: WebhookConfig;
+    // その他の設定は許容
+    [key: string]: unknown;
 }
 
-// サーバーサイドでローカルの cms.config.json を読み込む
-const getCmsConfig = async (): Promise<CmsConfig & { draftDirectory?: string }> => {
+// zod スキーマ（厳格にはしすぎず、必須項目のみ検証）
+const MetaCacheSchema = z.object({
+    type: z.string(),
+    path: z.string()
+});
+
+const ContentItemSchema = z.object({
+    directory: z.string(),
+    articleFile: z.string(),
+    imageDirInsideContent: z.boolean().optional(),
+    metaCache: MetaCacheSchema.optional()
+});
+
+const WebhookEndpointSchema = z.object({
+    name: z.string(),
+    url: z.string().url(),
+    type: z.enum(['vercel', 'netlify', 'custom']).optional(),
+    events: z.array(z.string()).optional()
+});
+
+const WebhookConfigSchema = z.object({
+    enabled: z.boolean(),
+    secret: z.string().optional(),
+    endpoints: z.array(WebhookEndpointSchema).optional()
+});
+
+const CmsConfigSchema = z.object({
+    targetRepository: z.string().regex(/^[^/]+\/[^/]+$/, 'owner/repo 形式で指定してください'),
+    branch: z.string().optional(),
+    draftDirectory: z.string().optional(),
+    content: z.array(ContentItemSchema),
+    webhooks: WebhookConfigSchema.optional()
+    // 追加のキーは許容
+});
+
+let cachedConfig: CmsConfig | null = null;
+
+// サーバーサイドでローカルの cms.config.json を読み込み、検証・キャッシュする
+const getCmsConfig = async (): Promise<CmsConfig> => {
+    if (cachedConfig) return cachedConfig;
     const configPath = path.join(process.cwd(), 'cms.config.json');
     const file = await fs.readFile(configPath, 'utf-8');
-    return JSON.parse(file);
+    const parsed = JSON.parse(file);
+    const result = CmsConfigSchema.safeParse(parsed);
+    if (!result.success) {
+        const issue = result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join(', ');
+        throw new Error(`cms.config.json の検証に失敗: ${issue}`);
+    }
+    // secret は環境変数優先（存在しても型は維持）
+    const cfg: CmsConfig = {
+        ...result.data,
+        webhooks: result.data.webhooks
+            ? {
+                  ...result.data.webhooks,
+                  secret: process.env.WEBHOOK_SECRET || result.data.webhooks.secret
+              }
+            : undefined
+    };
+    cachedConfig = cfg;
+    return cfg;
 };
 
 // draftDirectoryも含めたcontentTypeリストを返す

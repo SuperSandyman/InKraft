@@ -2,18 +2,11 @@ import Link from 'next/link';
 import { fetchAllContentsFromGitHub, Content } from '@/lib/content';
 import ContentsTable from '@/components/contents-list/contents-table';
 import Pagination from '@/components/contents-list/pagination';
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator
-} from '@/components/ui/breadcrumb';
+import Breadcrumbs from '@/components/common/breadcrumbs';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import NewArticleButton from '@/components/contents-list/new-article-button';
-import cmsConfig from '../../../../cms.config.json';
+import { getCmsConfig } from '@/lib/content';
 
 interface ContentsPageProps {
     searchParams: Promise<{
@@ -26,6 +19,7 @@ export default async function ContentsPage({ searchParams }: ContentsPageProps) 
     const { status = 'all', page = '1' } = await searchParams;
     const pageNumber = Number(page) || 1;
     const limit = 10;
+    const cmsConfig = await getCmsConfig();
     // GitHubから全記事取得
     const allContents: Content[] = await fetchAllContentsFromGitHub();
     // 投稿日（date）降順でソート
@@ -64,17 +58,12 @@ export default async function ContentsPage({ searchParams }: ContentsPageProps) 
                 <div className="flex items-center gap-2 px-4">
                     <SidebarTrigger className="-ml-1" />
                     <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-                    <Breadcrumb>
-                        <BreadcrumbList>
-                            <BreadcrumbItem>
-                                <BreadcrumbLink href="/">ダッシュボード</BreadcrumbLink>
-                            </BreadcrumbItem>
-                            <BreadcrumbSeparator />
-                            <BreadcrumbItem>
-                                <BreadcrumbPage>記事一覧</BreadcrumbPage>
-                            </BreadcrumbItem>
-                        </BreadcrumbList>
-                    </Breadcrumb>
+                    <Breadcrumbs
+                        items={[
+                            { label: 'ダッシュボード', href: '/' },
+                            { label: '記事一覧', isCurrent: true }
+                        ]}
+                    />
                 </div>
             </header>
             <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
