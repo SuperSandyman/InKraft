@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 
 import type { FrontmatterSchema } from '@/types/frontmatter';
 import ContentEditClient from './content-edit-client';
-import { fetchContentBySlug, getCmsConfig } from '@/lib/content';
+import { fetchContentBySlug, getCmsConfig, getAllContentTypes } from '@/lib/content';
 import { replaceFileNameWithRawUrlInMarkdown } from '@/lib/github-path';
 
 interface PageProps {
@@ -36,6 +36,18 @@ export default async function ContentEditPage(props: PageProps) {
     const [owner, repo] = cfg.targetRepository.split('/');
     const branch = cfg.branch || 'main';
 
+    // ディレクトリ一覧取得
+    let directories: string[] = [];
+    try {
+        const types = await getAllContentTypes();
+        const candidates = types.map((t) => t.directory);
+        directories = cfg.draftDirectory
+            ? [cfg.draftDirectory, ...candidates.filter((dir) => dir !== cfg.draftDirectory)]
+            : candidates;
+    } catch (error) {
+        console.error('ディレクトリ一覧の取得に失敗しました:', error);
+    }
+
     // 記事詳細データ取得（本文全体 + frontmatter）
     const articleDetail = await fetchContentBySlug(slug);
     if (!articleDetail) {
@@ -65,6 +77,7 @@ export default async function ContentEditPage(props: PageProps) {
             schema={schema}
             article={article}
             fullContent={contentForEdit}
+            directories={directories}
             githubInfo={{ owner, repo, branch }}
         />
     );

@@ -66,6 +66,13 @@ const DynamicContentForm = ({
     const zodSchema = useMemo(() => buildZodSchema(schema), [schema]);
 
     // 初期値生成
+    const initialDirectory = useMemo(() => {
+        if (initialValues && typeof initialValues['directory'] === 'string') {
+            return initialValues['directory'] as string;
+        }
+        return directories[0] ?? '';
+    }, [initialValues, directories]);
+
     const defaultValues = useMemo(() => {
         const values: FrontmatterData = {};
         // slugフィールドを必ず初期化
@@ -81,8 +88,11 @@ const DynamicContentForm = ({
                 values[field.name] = '';
             }
         });
+        if (initialDirectory) {
+            values['directory'] = initialDirectory;
+        }
         return values;
-    }, [schema, initialValues]);
+    }, [schema, initialValues, initialDirectory]);
 
     const {
         control,
@@ -97,7 +107,17 @@ const DynamicContentForm = ({
 
     // ディレクトリ選択
     const watchedDirectory = watch('directory');
-    const selectedDirectory: string = typeof watchedDirectory === 'string' ? watchedDirectory : directories[0] || '';
+    const selectedDirectory: string =
+        typeof watchedDirectory === 'string' && watchedDirectory !== ''
+            ? watchedDirectory
+            : initialDirectory;
+
+    useEffect(() => {
+        if (initialDirectory) {
+            setValue('directory', initialDirectory);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialDirectory]);
 
     // 値の変化をonChangeで通知
     const watchedFields = watch();

@@ -79,7 +79,7 @@ describe('Webhook configuration validation', () => {
                     {
                         name: '',
                         url: '',
-                        type: 'invalid' as any // 型エラーを意図的に発生させる
+                        type: 'invalid' as unknown as WebhookEndpoint['type'] // 型チェックを回避し不正値を注入
                     }
                 ]
             };

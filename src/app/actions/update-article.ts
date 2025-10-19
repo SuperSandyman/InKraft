@@ -1,6 +1,7 @@
 'use server';
 
 import matter from 'gray-matter';
+import type { Octokit } from '@octokit/rest';
 
 import { getCmsConfig, updateCacheForContent } from '@/lib/content';
 import { getOctokitWithAuth } from '@/lib/github-api';
@@ -14,7 +15,65 @@ interface UpdateArticleParams {
     content: string;
     articleFile?: string;
     originalSlug?: string; // 元のslugを追加
+    originalDirectory?: string;
 }
+
+const collectFilesRecursively = async (
+    octokit: Octokit,
+    owner: string,
+    repo: string,
+    directoryPath: string,
+    branch: string
+): Promise<Array<{ path: string; sha: string }>> => {
+    const { data } = await octokit.repos.getContent({
+        owner,
+        repo,
+        path: directoryPath,
+        ref: branch
+    });
+    if (!Array.isArray(data)) {
+        return [];
+    }
+
+    const files: Array<{ path: string; sha: string }> = [];
+    for (const item of data) {
+        if (item.type === 'file') {
+            files.push({ path: item.path, sha: item.sha });
+        } else if (item.type === 'dir') {
+            const childFiles = await collectFilesRecursively(octokit, owner, repo, item.path, branch);
+            files.push(...childFiles);
+        }
+    }
+    return files;
+};
+
+const pathExists = async (
+    octokit: Octokit,
+    owner: string,
+    repo: string,
+    targetPath: string,
+    branch: string
+): Promise<boolean> => {
+    try {
+        await octokit.repos.getContent({
+            owner,
+            repo,
+            path: targetPath,
+            ref: branch
+        });
+        return true;
+    } catch (error: unknown) {
+        if (
+            typeof error === 'object' &&
+            error !== null &&
+            'status' in error &&
+            (error as { status?: number }).status === 404
+        ) {
+            return false;
+        }
+        throw error;
+    }
+};
 
 export const updateArticle = async ({
     slug,
@@ -22,7 +81,8 @@ export const updateArticle = async ({
     frontmatter,
     content,
     articleFile = 'index.md',
-    originalSlug
+    originalSlug,
+    originalDirectory
 }: UpdateArticleParams): Promise<{ success: boolean; error?: string }> => {
     try {
         // 保存前にraw URLが含まれている場合のみ変換
@@ -37,18 +97,21 @@ export const updateArticle = async ({
         const octokit = await getOctokitWithAuth();
 
         const currentSlug = originalSlug || slug;
-        const currentFilePath = `${directory}/${currentSlug}/${articleFile}`;
-        const newFilePath = `${directory}/${slug}/${articleFile}`;
+        const currentDirectory = originalDirectory || directory;
+        const sourceBasePath = `${currentDirectory}/${currentSlug}`;
+        const targetBasePath = `${directory}/${slug}`;
+        const sourceFilePath = `${sourceBasePath}/${articleFile}`;
+        const targetFilePath = `${targetBasePath}/${articleFile}`;
 
         // 既存ファイルのSHAを取得
         const { data: existingFile } = await octokit.repos.getContent({
             owner,
             repo,
-            path: currentFilePath,
+            path: sourceFilePath,
             ref: branch
         });
 
-        if (!('sha' in existingFile)) {
+        if (Array.isArray(existingFile) || !('sha' in existingFile)) {
             return { success: false, error: 'ファイルが見つかりません' };
         }
 
@@ -56,51 +119,104 @@ export const updateArticle = async ({
         const markdownContent = matter.stringify(contentForSave, frontmatter);
         const encodedContent = Buffer.from(markdownContent, 'utf-8').toString('base64');
 
-        if (currentSlug !== slug) {
-            // slugが変更された場合は、古いファイルを削除して新しいファイルを作成
+        const pathChanged = sourceBasePath !== targetBasePath;
 
-            // 新しいファイルが既に存在するかチェック
-            try {
-                await octokit.repos.getContent({
-                    owner,
-                    repo,
-                    path: newFilePath,
-                    ref: branch
-                });
+        if (pathChanged) {
+            const targetExists = await pathExists(octokit, owner, repo, targetBasePath, branch);
+            if (targetExists) {
                 return { success: false, error: '同名の記事が既に存在します' };
-            } catch {
-                // ファイルが存在しない場合は正常（新規作成可能）
             }
 
-            // 新しいファイルを作成
-            await octokit.repos.createOrUpdateFileContents({
+            const filesInSource = await collectFilesRecursively(octokit, owner, repo, sourceBasePath, branch);
+            if (!filesInSource.length) {
+                return { success: false, error: 'コピー対象のファイルが見つかりません' };
+            }
+
+            const assetFiles = filesInSource.filter((file) => file.path !== sourceFilePath);
+
+            const { data: refData } = await octokit.git.getRef({
                 owner,
                 repo,
-                path: newFilePath,
-                message: `Update article: rename ${currentSlug} to ${slug}`,
+                ref: `heads/${branch}`
+            });
+            const currentCommitSha = refData.object.sha;
+
+            const { data: baseCommit } = await octokit.git.getCommit({
+                owner,
+                repo,
+                commit_sha: currentCommitSha
+            });
+            const baseTreeSha = baseCommit.tree.sha;
+
+            const treeChanges: Array<{
+                path: string;
+                mode: '100644';
+                type: 'blob';
+                sha: string | null;
+            }> = [];
+
+            for (const asset of assetFiles) {
+                const targetPath = asset.path.replace(sourceBasePath, targetBasePath);
+                treeChanges.push({
+                    path: targetPath,
+                    mode: '100644',
+                    type: 'blob',
+                    sha: asset.sha
+                });
+            }
+
+            const { data: newArticleBlob } = await octokit.git.createBlob({
+                owner,
+                repo,
                 content: encodedContent,
-                branch
+                encoding: 'base64'
+            });
+            treeChanges.push({
+                path: targetFilePath,
+                mode: '100644',
+                type: 'blob',
+                sha: newArticleBlob.sha
             });
 
-            // 古いファイルを削除
-            await octokit.repos.deleteFile({
+            for (const file of filesInSource) {
+                treeChanges.push({
+                    path: file.path,
+                    mode: '100644',
+                    type: 'blob',
+                    sha: null
+                });
+            }
+
+            const { data: newTree } = await octokit.git.createTree({
                 owner,
                 repo,
-                path: currentFilePath,
-                message: `Delete old article file: ${currentFilePath}`,
-                sha: existingFile.sha,
-                branch
+                base_tree: baseTreeSha,
+                tree: treeChanges
             });
 
-            // キャッシュを更新（削除してから作成）
-            await updateCacheForContent(directory, currentSlug, {}, '', 'delete');
+            const { data: newCommit } = await octokit.git.createCommit({
+                owner,
+                repo,
+                message: `Update article: move ${sourceBasePath} to ${targetBasePath}`,
+                tree: newTree.sha,
+                parents: [currentCommitSha]
+            });
+
+            await octokit.git.updateRef({
+                owner,
+                repo,
+                ref: `heads/${branch}`,
+                sha: newCommit.sha
+            });
+
+            await updateCacheForContent(currentDirectory, currentSlug, {}, '', 'delete');
             await updateCacheForContent(directory, slug, frontmatter, contentForSave, 'create');
         } else {
             // slugが変更されていない場合は通常の更新
             await octokit.repos.createOrUpdateFileContents({
                 owner,
                 repo,
-                path: currentFilePath,
+                path: sourceFilePath,
                 message: `Update article: ${slug}`,
                 content: encodedContent,
                 sha: existingFile.sha,

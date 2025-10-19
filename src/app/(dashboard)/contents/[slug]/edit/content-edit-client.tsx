@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import type { FrontmatterSchema, FrontmatterData } from '@/types/frontmatter';
@@ -24,9 +24,10 @@ interface ContentEditClientProps {
     article: Content;
     fullContent?: string;
     githubInfo: GithubInfo;
+    directories?: string[];
 }
 
-const ContentEditClient = ({ schema, article, fullContent, githubInfo }: ContentEditClientProps) => {
+const ContentEditClient = ({ schema, article, fullContent, githubInfo, directories = [] }: ContentEditClientProps) => {
     const router = useRouter();
     const [content, setContent] = useState<string>(() => {
         // fullContentが提供されている場合はそれを使用、そうでなければfallback
@@ -36,7 +37,7 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo }: Content
         const title = typeof article.title === 'string' ? article.title : '';
         return `# ${title}\n\n${article.excerpt}`;
     });
-    const [meta] = useState<FrontmatterData>(() => {
+    const initialMeta = useMemo(() => {
         const meta: FrontmatterData = {};
 
         // slugフィールドを強制的に追加
@@ -62,15 +63,18 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo }: Content
                 meta[field.name] = '';
             }
         });
-        return meta;
-    });
+        return {
+            ...meta,
+            directory: article.directory
+        };
+    }, [article, schema]);
+    const [formMeta, setFormMeta] = useState<FrontmatterData & { directory?: string }>(initialMeta);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
     const handleFormSubmit = async (formData: FrontmatterData & { directory?: string }) => {
         setIsSubmitting(true);
         try {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { directory: _, slug: newSlug, ...frontmatter } = formData;
+            const { directory: formDirectory, slug: newSlug, ...frontmatter } = formData;
 
             const sanitizedSlug =
                 typeof newSlug === 'string'
@@ -87,12 +91,16 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo }: Content
                 return;
             }
 
+            const targetDirectory =
+                typeof formDirectory === 'string' && formDirectory.trim() !== '' ? formDirectory : article.directory;
+
             const result = await updateArticle({
                 slug: sanitizedSlug,
-                directory: article.directory,
+                directory: targetDirectory,
                 frontmatter,
                 content,
-                originalSlug: article.slug
+                originalSlug: article.slug,
+                originalDirectory: article.directory
             });
 
             if (result.success) {
@@ -108,6 +116,25 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo }: Content
         }
     };
 
+    const handleFormMetaChange = (data: FrontmatterData & { directory?: string }) => {
+        setFormMeta((prev) => ({
+            ...prev,
+            ...data,
+            slug: typeof data.slug === 'string' ? data.slug : typeof prev.slug === 'string' ? prev.slug : '',
+            directory:
+                typeof data.directory === 'string' && data.directory.trim() !== ''
+                    ? data.directory
+                    : typeof prev.directory === 'string'
+                    ? prev.directory
+                    : article.directory
+        }));
+    };
+
+    const currentDirectory =
+        typeof formMeta.directory === 'string' && formMeta.directory !== '' ? formMeta.directory : article.directory;
+    const currentSlug = typeof formMeta.slug === 'string' && formMeta.slug !== '' ? formMeta.slug : article.slug;
+    const currentTitle = typeof formMeta.title === 'string' ? formMeta.title : '';
+
     return (
         <>
             <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
@@ -118,7 +145,7 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo }: Content
                         items={[
                             { label: 'ダッシュボード', href: '/' },
                             { label: '記事一覧', href: '/contents' },
-                            { label: typeof meta.title === 'string' ? meta.title : '...', href: undefined },
+                            { label: currentTitle || '...', href: undefined },
                             { label: '編集', isCurrent: true }
                         ]}
                     />
@@ -138,8 +165,8 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo }: Content
                                     value={content}
                                     onChange={setContent}
                                     height={700}
-                                    directory={article.directory}
-                                    slug={article.slug}
+                                    directory={currentDirectory}
+                                    slug={currentSlug}
                                     githubInfo={githubInfo}
                                 />
                             </div>
@@ -149,7 +176,9 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo }: Content
                                 schema={schema}
                                 onSubmit={handleFormSubmit}
                                 isSubmitting={isSubmitting}
-                                initialValues={meta}
+                                directories={directories}
+                                initialValues={initialMeta}
+                                onChange={handleFormMetaChange}
                             />
                         </div>
                     </div>
