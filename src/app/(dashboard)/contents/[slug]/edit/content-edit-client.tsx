@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 import type { FrontmatterSchema, FrontmatterData } from '@/types/frontmatter';
@@ -12,6 +12,7 @@ import { updateArticle } from '@/app/actions/update-article';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
 import Breadcrumbs from '@/components/common/breadcrumbs';
+import { useNavigationGuard } from '@/hooks/use-navigation-guard';
 
 interface GithubInfo {
     owner: string;
@@ -27,16 +28,31 @@ interface ContentEditClientProps {
     directories?: string[];
 }
 
+const normalizeMeta = (meta: FrontmatterData & { directory?: string }) => {
+    const entries: Array<[string, unknown]> = Object.entries(meta).map(([key, value]) => {
+        if (Array.isArray(value)) {
+            return [key, [...value]];
+        }
+        if (value === undefined || value === null) {
+            return [key, ''];
+        }
+        return [key, value];
+    });
+    entries.sort((a, b) => a[0].localeCompare(b[0]));
+    return Object.fromEntries(entries);
+};
+
 const ContentEditClient = ({ schema, article, fullContent, githubInfo, directories = [] }: ContentEditClientProps) => {
     const router = useRouter();
-    const [content, setContent] = useState<string>(() => {
-        // fullContentが提供されている場合はそれを使用、そうでなければfallback
+    const initialContentValue = useMemo(() => {
         if (fullContent) {
             return fullContent;
         }
         const title = typeof article.title === 'string' ? article.title : '';
         return `# ${title}\n\n${article.excerpt}`;
-    });
+    }, [article, fullContent]);
+    const [content, setContent] = useState<string>(initialContentValue);
+    const initialContentRef = useRef<string>(initialContentValue);
     const initialMeta = useMemo(() => {
         const meta: FrontmatterData = {};
 
@@ -69,8 +85,22 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo, directori
         };
     }, [article, schema]);
     const [formMeta, setFormMeta] = useState<FrontmatterData & { directory?: string }>(initialMeta);
+    const initialNormalizedMetaRef = useRef<Record<string, unknown>>(normalizeMeta(initialMeta));
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
 
+    useEffect(() => {
+        const normalizedCurrent = normalizeMeta(formMeta);
+        const metaChanged = JSON.stringify(normalizedCurrent) !== JSON.stringify(initialNormalizedMetaRef.current);
+        const contentChanged = content !== initialContentRef.current;
+        setHasUnsavedChanges(contentChanged || metaChanged);
+    }, [content, formMeta]);
+
+    useNavigationGuard(hasUnsavedChanges && !isSubmitting);
+
+    const handleContentChange = useCallback((value: string) => {
+        setContent(value);
+    }, []);
     const handleFormSubmit = async (formData: FrontmatterData & { directory?: string }) => {
         setIsSubmitting(true);
         try {
@@ -104,6 +134,12 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo, directori
             });
 
             if (result.success) {
+                initialContentRef.current = content;
+                initialNormalizedMetaRef.current = normalizeMeta({
+                    ...frontmatter,
+                    slug: sanitizedSlug,
+                    directory: targetDirectory
+                });
                 router.push('/contents');
             } else {
                 alert(result.error || '保存に失敗しました');
@@ -116,19 +152,31 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo, directori
         }
     };
 
-    const handleFormMetaChange = (data: FrontmatterData & { directory?: string }) => {
-        setFormMeta((prev) => ({
-            ...prev,
-            ...data,
-            slug: typeof data.slug === 'string' ? data.slug : typeof prev.slug === 'string' ? prev.slug : '',
-            directory:
-                typeof data.directory === 'string' && data.directory.trim() !== ''
-                    ? data.directory
-                    : typeof prev.directory === 'string'
-                    ? prev.directory
-                    : article.directory
-        }));
-    };
+    const handleFormMetaChange = useCallback(
+        (data: FrontmatterData & { directory?: string }) => {
+            setFormMeta((prev) => {
+                const nextDirectory =
+                    typeof data.directory === 'string' && data.directory.trim() !== ''
+                        ? data.directory
+                        : typeof prev.directory === 'string'
+                        ? prev.directory
+                        : article.directory;
+                const nextSlug =
+                    typeof data.slug === 'string'
+                        ? data.slug
+                        : typeof prev.slug === 'string'
+                        ? prev.slug
+                        : article.slug;
+                return {
+                    ...prev,
+                    ...data,
+                    slug: nextSlug,
+                    directory: nextDirectory
+                };
+            });
+        },
+        [article.directory, article.slug]
+    );
 
     const currentDirectory =
         typeof formMeta.directory === 'string' && formMeta.directory !== '' ? formMeta.directory : article.directory;
@@ -163,7 +211,7 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo, directori
                                 <h2 className="text-lg font-semibold mb-4">記事内容</h2>
                                 <MdEditor
                                     value={content}
-                                    onChange={setContent}
+                                    onChange={handleContentChange}
                                     height={700}
                                     directory={currentDirectory}
                                     slug={currentSlug}

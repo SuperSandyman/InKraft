@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+
 import type { FrontmatterSchema, FrontmatterData } from '@/types/frontmatter';
 import MdEditor from '@/components/content-edit/md-editor';
 import DynamicContentForm from '@/components/content-edit/dynamic-content-form';
@@ -13,23 +14,58 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
 // パンくずは共通コンポーネントを使用
 import Breadcrumbs from '@/components/common/breadcrumbs';
+import { useNavigationGuard } from '@/hooks/use-navigation-guard';
 
 interface ContentNewClientProps {
     schema: FrontmatterSchema;
     directories?: string[];
 }
 
+const DEFAULT_CONTENT = '# 新しい記事\n\nここに記事の内容を書いてください...';
+
+const normalizeMeta = (meta: FrontmatterData & { directory?: string } = { slug: '' }) => {
+    const entries = Object.entries(meta).map(([key, value]) => {
+        if (Array.isArray(value)) {
+            return [key, [...value]];
+        }
+        if (value === undefined || value === null) {
+            return [key, ''];
+        }
+        return [key, value];
+    });
+    entries.sort(([a], [b]) => String(a).localeCompare(String(b)));
+    return Object.fromEntries(entries);
+};
+
 const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) => {
     const router = useRouter();
-    const [content, setContent] = useState<string>('# 新しい記事\n\nここに記事の内容を書いてください...');
+    const [content, setContent] = useState<string>(DEFAULT_CONTENT);
+    const initialContentRef = useRef<string>(DEFAULT_CONTENT);
+    const [formMeta, setFormMeta] = useState<FrontmatterData & { directory?: string }>({ slug: '' });
+    const initialMetaRef = useRef<(FrontmatterData & { directory?: string }) | null>(null);
+    const hasCapturedInitialMetaRef = useRef<boolean>(false);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [aiPrompt, setAiPrompt] = useState<string>('');
     const [isGenerating, setIsGenerating] = useState<boolean>(false);
-    const [formMeta, setFormMeta] = useState<FrontmatterData & { directory?: string }>({ slug: '' });
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
+
+    useEffect(() => {
+        const baselineMeta = initialMetaRef.current ?? formMeta;
+        const normalizedInitial = normalizeMeta(baselineMeta);
+        const normalizedCurrent = normalizeMeta(formMeta);
+        const contentChanged = content !== initialContentRef.current;
+        const metaChanged = JSON.stringify(normalizedCurrent) !== JSON.stringify(normalizedInitial);
+        setHasUnsavedChanges(contentChanged || metaChanged);
+    }, [content, formMeta]);
+
+    useNavigationGuard(hasUnsavedChanges && !isSubmitting);
+
+    const handleContentChange = useCallback((value: string) => {
+        setContent(value);
+    }, []);
 
     const handleFormSubmit = async (formData: FrontmatterData & { directory: string }) => {
         setIsSubmitting(true);
-        // デバッグ: formDataとslugの値を出力
         console.log('handleFormSubmit: formData =', formData);
         const slug = (formData.slug ?? '').toString();
         console.log('handleFormSubmit: slug =', slug, 'typeof:', typeof slug);
@@ -40,7 +76,6 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
                 return;
             }
 
-            // slugのサニタイズ
             const sanitizedSlug = slug
                 .toLowerCase()
                 .replace(/[^a-zA-Z0-9-_]/g, '-')
@@ -62,6 +97,12 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
             });
 
             if (result.success) {
+                initialContentRef.current = content;
+                initialMetaRef.current = normalizeMeta({
+                    ...frontmatter,
+                    directory,
+                    slug: sanitizedSlug
+                }) as FrontmatterData & { directory?: string };
                 router.push('/contents');
             } else {
                 alert(result.error || '保存に失敗しました');
@@ -74,15 +115,19 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
         }
     };
 
-    // フォーム入力変更時にformMetaを更新
-    const handleFormMetaChange = (data: FrontmatterData & { directory?: string }) => {
-        setFormMeta({
+    const handleFormMetaChange = useCallback((data: FrontmatterData & { directory?: string }) => {
+        const mergedMeta: FrontmatterData & { directory?: string } = {
             ...data,
             slug: typeof data.slug === 'string' ? data.slug : ''
-        });
-    };
+        };
+        const clonedMeta = normalizeMeta(mergedMeta) as FrontmatterData & { directory?: string };
+        if (!hasCapturedInitialMetaRef.current) {
+            initialMetaRef.current = { ...clonedMeta };
+            hasCapturedInitialMetaRef.current = true;
+        }
+        setFormMeta(clonedMeta);
+    }, []);
 
-    // MdEditorに渡す値の詳細デバッグ
     useEffect(() => {
         console.log('[MdEditor debug] directory:', typeof formMeta.directory, formMeta.directory);
         console.log('[MdEditor debug] slug:', typeof formMeta.slug, formMeta.slug);
@@ -172,7 +217,7 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
                                 onSubmit={handleFormSubmit}
                                 isSubmitting={isSubmitting}
                                 directories={directories}
-                                initialValues={formMeta}
+                                initialValues={initialMetaRef.current ?? formMeta}
                                 onChange={handleFormMetaChange}
                             />
                         </div>
@@ -182,7 +227,7 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
                                 <h2 className="text-lg font-semibold mb-4">記事内容</h2>
                                 <MdEditor
                                     value={content}
-                                    onChange={setContent}
+                                    onChange={handleContentChange}
                                     height={700}
                                     directory={typeof formMeta.directory === 'string' ? formMeta.directory : ''}
                                     slug={typeof formMeta.slug === 'string' ? formMeta.slug : ''}
@@ -221,7 +266,7 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
                                 onSubmit={handleFormSubmit}
                                 isSubmitting={isSubmitting}
                                 directories={directories}
-                                initialValues={formMeta}
+                                initialValues={initialMetaRef.current ?? formMeta}
                                 onChange={handleFormMetaChange}
                             />
                         </div>
