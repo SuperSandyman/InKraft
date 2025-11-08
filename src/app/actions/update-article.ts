@@ -4,6 +4,7 @@ import matter from 'gray-matter';
 import type { Octokit } from '@octokit/rest';
 
 import { getCmsConfig, updateCacheForContent } from '@/lib/content';
+import { convertDatesToSchemaFormat } from '@/lib/date-format';
 import { getOctokitWithAuth } from '@/lib/github-api';
 import { replaceRawUrlWithFileNameInMarkdown } from '@/lib/github-path';
 import { triggerCmsWebhook } from '@/lib/webhook';
@@ -115,8 +116,11 @@ export const updateArticle = async ({
             return { success: false, error: 'ファイルが見つかりません' };
         }
 
+        // 日付をスキーマ指定フォーマットに変換
+        const formattedFrontmatter = await convertDatesToSchemaFormat(frontmatter);
+
         // frontmatterとcontentを結合してMarkdownファイルを生成
-        const markdownContent = matter.stringify(contentForSave, frontmatter);
+        const markdownContent = matter.stringify(contentForSave, formattedFrontmatter);
         const encodedContent = Buffer.from(markdownContent, 'utf-8').toString('base64');
 
         const pathChanged = sourceBasePath !== targetBasePath;
@@ -210,7 +214,7 @@ export const updateArticle = async ({
             });
 
             await updateCacheForContent(currentDirectory, currentSlug, {}, '', 'delete');
-            await updateCacheForContent(directory, slug, frontmatter, contentForSave, 'create');
+            await updateCacheForContent(directory, slug, formattedFrontmatter, contentForSave, 'create');
         } else {
             // slugが変更されていない場合は通常の更新
             await octokit.repos.createOrUpdateFileContents({
@@ -224,7 +228,7 @@ export const updateArticle = async ({
             });
 
             // index.json キャッシュを更新
-            await updateCacheForContent(directory, slug, frontmatter, contentForSave, 'update');
+            await updateCacheForContent(directory, slug, formattedFrontmatter, contentForSave, 'update');
         }
 
         // Webhookを発火

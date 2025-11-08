@@ -3,6 +3,7 @@
 import matter from 'gray-matter';
 
 import { getCmsConfig, updateCacheForContent } from '@/lib/content';
+import { convertDatesToSchemaFormat } from '@/lib/date-format';
 import { getOctokitWithAuth } from '@/lib/github-api';
 import { triggerCmsWebhook } from '@/lib/webhook';
 
@@ -31,8 +32,11 @@ export const createArticle = async ({
         const sanitizedSlug = slug.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
         const filePath = `${directory}/${sanitizedSlug}/${articleFile}`;
 
+        // 日付をスキーマ指定フォーマットに変換
+        const formattedFrontmatter = await convertDatesToSchemaFormat(frontmatter);
+
         // frontmatterとcontentを結合してMarkdownファイルを生成
-        const markdownContent = matter.stringify(content, frontmatter);
+        const markdownContent = matter.stringify(content, formattedFrontmatter);
 
         // ファイルが既に存在するかチェック
         try {
@@ -60,7 +64,7 @@ export const createArticle = async ({
         });
 
         // index.json キャッシュを更新
-        await updateCacheForContent(directory, sanitizedSlug, frontmatter, content, 'create');
+        await updateCacheForContent(directory, sanitizedSlug, formattedFrontmatter, content, 'create');
 
         // Webhookを発火
         await triggerCmsWebhook('create', {

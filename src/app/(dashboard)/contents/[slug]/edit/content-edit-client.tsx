@@ -69,12 +69,38 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo, directori
 
         schema.fields.forEach((field) => {
             const fieldValue = article[field.name];
-            if (fieldValue !== undefined && fieldValue !== null) {
-                if (typeof fieldValue === 'string' || typeof fieldValue === 'boolean' || Array.isArray(fieldValue)) {
-                    meta[field.name] = fieldValue;
-                } else {
-                    meta[field.name] = '';
+            if (fieldValue === undefined || fieldValue === null) {
+                meta[field.name] = '';
+                return;
+            }
+            // dateフィールド特別処理（最短手数で文字列化）
+            if (field.type === 'date') {
+                if (fieldValue instanceof Date) {
+                    meta[field.name] = isNaN(fieldValue.getTime()) ? '' : fieldValue.toISOString().slice(0, 10);
+                    return;
                 }
+                if (typeof fieldValue === 'string') {
+                    let s = fieldValue.trim();
+                    if (s.includes('T')) s = s.split('T')[0];
+                    if (s.includes(' ')) s = s.split(' ')[0];
+                    s = s.replace(/\//g, '-');
+                    // 正規 yyyy-mm-dd ならそのまま
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+                        meta[field.name] = s;
+                        return;
+                    }
+                    // パースできれば ISO へ
+                    const parsed = new Date(s);
+                    meta[field.name] = isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
+                    return;
+                }
+                // その他（配列/booleanなど）は空
+                meta[field.name] = '';
+                return;
+            }
+            // 既存ロジック（string/boolean/array以外は空）
+            if (typeof fieldValue === 'string' || typeof fieldValue === 'boolean' || Array.isArray(fieldValue)) {
+                meta[field.name] = fieldValue;
             } else {
                 meta[field.name] = '';
             }

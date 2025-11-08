@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import type { FrontmatterSchema } from '@/types/frontmatter';
 import ContentEditClient from './content-edit-client';
 import { fetchContentBySlug, getCmsConfig, getAllContentTypes } from '@/lib/content';
+import { convertDatesFromSchemaFormat } from '@/lib/date-format';
 import { replaceFileNameWithRawUrlInMarkdown } from '@/lib/github-path';
 
 interface PageProps {
@@ -54,12 +55,15 @@ export default async function ContentEditPage(props: PageProps) {
         notFound();
     }
 
+    // 日付をyyyy-mm-ddに変換
+    const convertedFrontmatter = await convertDatesFromSchemaFormat(articleDetail.frontmatter);
+
     // ContentEditClient用にContent型のオブジェクトを作成
     const article = {
         slug,
         excerpt: '',
         directory: articleDetail.directory,
-        ...articleDetail.frontmatter
+        ...convertedFrontmatter
     };
 
     // 本文の画像パスをファイル名→raw URLに変換
