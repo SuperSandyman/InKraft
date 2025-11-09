@@ -103,7 +103,10 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
                     directory,
                     slug: sanitizedSlug
                 }) as FrontmatterData & { directory?: string };
+                // 即座にリダイレクト（キャッシュ更新は裏で実行中）
                 router.push('/contents');
+                // キャッシュ再検証をトリガー
+                router.refresh();
             } else {
                 alert(result.error || '保存に失敗しました');
             }

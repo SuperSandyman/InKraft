@@ -213,8 +213,9 @@ export const updateArticle = async ({
                 sha: newCommit.sha
             });
 
-            await updateCacheForContent(currentDirectory, currentSlug, {}, '', 'delete');
-            await updateCacheForContent(directory, slug, formattedFrontmatter, contentForSave, 'create');
+            // キャッシュ更新（非同期・fire-and-forget）
+            updateCacheForContent(currentDirectory, currentSlug, {}, '', 'delete').catch(console.error);
+            updateCacheForContent(directory, slug, formattedFrontmatter, contentForSave, 'create').catch(console.error);
         } else {
             // slugが変更されていない場合は通常の更新
             await octokit.repos.createOrUpdateFileContents({
@@ -227,16 +228,16 @@ export const updateArticle = async ({
                 branch
             });
 
-            // index.json キャッシュを更新
-            await updateCacheForContent(directory, slug, formattedFrontmatter, contentForSave, 'update');
+            // index.json キャッシュを更新（非同期・fire-and-forget）
+            updateCacheForContent(directory, slug, formattedFrontmatter, contentForSave, 'update').catch(console.error);
         }
 
-        // Webhookを発火
-        await triggerCmsWebhook('update', {
+        // Webhookを発火（非同期・fire-and-forget）
+        triggerCmsWebhook('update', {
             slug,
             directory,
             repository: config.targetRepository
-        });
+        }).catch((err) => console.error('Webhook発火に失敗（記事は保存済み）:', err));
 
         return { success: true };
     } catch (error) {

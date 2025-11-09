@@ -15,6 +15,9 @@ interface ContentsPageProps {
     }>;
 }
 
+// 60秒間キャッシュして高速化
+export const revalidate = 60;
+
 export default async function ContentsPage({ searchParams }: ContentsPageProps) {
     const { status = 'all', page = '1' } = await searchParams;
     const pageNumber = Number(page) || 1;
