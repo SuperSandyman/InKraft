@@ -82,26 +82,28 @@ export const deleteArticle = async ({ slug, directory }: DeleteArticleParams): P
         }
 
         if (isLastArticle && cachePath && cacheSha) {
-            // 最後の1件だった場合はindex.jsonも削除
-            await octokit.repos.deleteFile({
-                owner,
-                repo,
-                path: cachePath,
-                message: `Delete empty index.json for ${directory}`,
-                sha: cacheSha,
-                branch
-            });
+            // 最後の1件だった場合はindex.jsonも削除（非同期）
+            octokit.repos
+                .deleteFile({
+                    owner,
+                    repo,
+                    path: cachePath,
+                    message: `Delete empty index.json for ${directory}`,
+                    sha: cacheSha,
+                    branch
+                })
+                .catch(console.error);
         } else {
-            // それ以外はindex.jsonを更新
-            await updateCacheForContent(directory, slug, {}, '', 'delete');
+            // それ以外はindex.jsonを更新（非同期）
+            updateCacheForContent(directory, slug, {}, '', 'delete').catch(console.error);
         }
 
-        // Webhookを発火
-        await triggerCmsWebhook('delete', {
+        // Webhookを発火（非同期・fire-and-forget）
+        triggerCmsWebhook('delete', {
             slug,
             directory,
             repository: config.targetRepository
-        });
+        }).catch((err) => console.error('Webhook発火に失敗（記事は削除済み）:', err));
 
         return true;
     } catch {

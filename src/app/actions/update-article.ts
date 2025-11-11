@@ -4,6 +4,7 @@ import matter from 'gray-matter';
 import type { Octokit } from '@octokit/rest';
 
 import { getCmsConfig, updateCacheForContent } from '@/lib/content';
+import { convertDatesToSchemaFormat } from '@/lib/date-format';
 import { getOctokitWithAuth } from '@/lib/github-api';
 import { replaceRawUrlWithFileNameInMarkdown } from '@/lib/github-path';
 import { triggerCmsWebhook } from '@/lib/webhook';
@@ -115,8 +116,11 @@ export const updateArticle = async ({
             return { success: false, error: 'ファイルが見つかりません' };
         }
 
+        // 日付をスキーマ指定フォーマットに変換
+        const formattedFrontmatter = await convertDatesToSchemaFormat(frontmatter);
+
         // frontmatterとcontentを結合してMarkdownファイルを生成
-        const markdownContent = matter.stringify(contentForSave, frontmatter);
+        const markdownContent = matter.stringify(contentForSave, formattedFrontmatter);
         const encodedContent = Buffer.from(markdownContent, 'utf-8').toString('base64');
 
         const pathChanged = sourceBasePath !== targetBasePath;
@@ -209,8 +213,9 @@ export const updateArticle = async ({
                 sha: newCommit.sha
             });
 
-            await updateCacheForContent(currentDirectory, currentSlug, {}, '', 'delete');
-            await updateCacheForContent(directory, slug, frontmatter, contentForSave, 'create');
+            // キャッシュ更新（非同期・fire-and-forget）
+            updateCacheForContent(currentDirectory, currentSlug, {}, '', 'delete').catch(console.error);
+            updateCacheForContent(directory, slug, formattedFrontmatter, contentForSave, 'create').catch(console.error);
         } else {
             // slugが変更されていない場合は通常の更新
             await octokit.repos.createOrUpdateFileContents({
@@ -223,16 +228,16 @@ export const updateArticle = async ({
                 branch
             });
 
-            // index.json キャッシュを更新
-            await updateCacheForContent(directory, slug, frontmatter, contentForSave, 'update');
+            // index.json キャッシュを更新（非同期・fire-and-forget）
+            updateCacheForContent(directory, slug, formattedFrontmatter, contentForSave, 'update').catch(console.error);
         }
 
-        // Webhookを発火
-        await triggerCmsWebhook('update', {
+        // Webhookを発火（非同期・fire-and-forget）
+        triggerCmsWebhook('update', {
             slug,
             directory,
             repository: config.targetRepository
-        });
+        }).catch((err) => console.error('Webhook発火に失敗（記事は保存済み）:', err));
 
         return { success: true };
     } catch (error) {
