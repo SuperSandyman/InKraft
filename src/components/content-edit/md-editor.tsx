@@ -1,10 +1,16 @@
 'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import CodeMirror from '@uiw/react-codemirror';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import { EditorView } from '@codemirror/view';
+
+// SSR対策で dynamic import
+const MarkdownPreview = dynamic(() => import('@uiw/react-markdown-preview'), {
+    ssr: false
+});
 
 interface GithubInfo {
     owner: string;
@@ -30,6 +36,7 @@ const MdEditor = ({
     githubInfo
 }: MdEditorProps) => {
     const [isUploading, setIsUploading] = useState<boolean>(false);
+    const [showPreview, setShowPreview] = useState<boolean>(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const editorRef = useRef<EditorView | null>(null);
 
@@ -139,8 +146,8 @@ const MdEditor = ({
 
     return (
         <div className="w-full relative">
-            {/* 画像アップロードツールバー */}
-            <div className="flex items-center gap-2 p-2 border-b bg-muted/30">
+            {/* 画像アップロードツールバー（モバイルで折り返し防止 & 横スクロール許可） */}
+            <div className="flex items-center gap-2 p-2 border-b bg-muted/30 overflow-x-auto whitespace-nowrap">
                 <button
                     type="button"
                     onClick={() => {
@@ -154,7 +161,7 @@ const MdEditor = ({
                         }
                     }}
                     disabled={isUploading}
-                    className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3"
+                    className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3 whitespace-nowrap"
                     aria-label="画像アップロード"
                 >
                     {isUploading ? (
@@ -172,35 +179,77 @@ const MdEditor = ({
                     )}
                     <span className="ml-2">画像</span>
                 </button>
-                <span className="text-xs text-muted-foreground">
+
+                {/* プレビュー切替ボタン */}
+                <button
+                    type="button"
+                    onClick={() => setShowPreview(!showPreview)}
+                    className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 px-3 whitespace-nowrap"
+                    aria-label="プレビュー切替"
+                >
+                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M10 4C5.5 4 2 7.5 2 10s3.5 6 8 6 8-3.5 8-6-3.5-6-8-6z"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            fill="none"
+                        />
+                        <circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                    </svg>
+                    <span className="ml-2">{showPreview ? 'エディタ' : 'プレビュー'}</span>
+                </button>
+
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
                     画像をドラッグ＆ドロップまたはクリックしてアップロード
                 </span>
             </div>
 
-            {/* CodeMirror エディタ */}
-            <CodeMirror
-                value={value}
-                height={`${height}px`}
-                extensions={extensions}
-                onChange={(val) => onChange?.(val)}
-                onCreateEditor={(view) => {
-                    editorRef.current = view;
-                }}
-                basicSetup={{
-                    lineNumbers: true,
-                    highlightActiveLineGutter: true,
-                    foldGutter: true,
-                    dropCursor: true,
-                    allowMultipleSelections: true,
-                    indentOnInput: true,
-                    bracketMatching: true,
-                    closeBrackets: true,
-                    autocompletion: true,
-                    rectangularSelection: true,
-                    highlightActiveLine: true,
-                    highlightSelectionMatches: true
-                }}
-            />
+            {/* エディタ + プレビュー（レスポンシブ: PC=左右分割、モバイル=プレビューで上書き） */}
+            <div className="relative flex flex-col md:flex-row gap-2">
+                {/* CodeMirror エディタ（モバイルでプレビュー時は隠す） */}
+                <div className={`${showPreview ? 'hidden md:block md:w-1/2' : 'w-full'}`}>
+                    <CodeMirror
+                        value={value}
+                        height={`${height}px`}
+                        extensions={extensions}
+                        onChange={(val) => onChange?.(val)}
+                        onCreateEditor={(view) => {
+                            editorRef.current = view;
+                        }}
+                        basicSetup={{
+                            lineNumbers: true,
+                            highlightActiveLineGutter: true,
+                            foldGutter: true,
+                            dropCursor: true,
+                            allowMultipleSelections: true,
+                            indentOnInput: true,
+                            bracketMatching: true,
+                            closeBrackets: true,
+                            autocompletion: true,
+                            rectangularSelection: true,
+                            highlightActiveLine: true,
+                            highlightSelectionMatches: true
+                        }}
+                    />
+                </div>
+
+                {/* プレビュー表示（PC: 右半分、モバイル: エディタを上書き表示） */}
+                {showPreview && (
+                    <div
+                        className="w-full md:w-1/2 border-l overflow-auto bg-background"
+                        style={{ height: `${height}px` }}
+                        data-color-mode="light"
+                    >
+                        <MarkdownPreview
+                            source={value}
+                            className="markdown-preview-custom"
+                            style={{
+                                padding: '1.5rem'
+                            }}
+                        />
+                    </div>
+                )}
+            </div>
 
             {/* 隠しファイル入力 */}
             <input
