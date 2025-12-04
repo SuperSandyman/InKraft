@@ -34,7 +34,7 @@ A lightweight, extensible CMS based on Markdown and GitHub.
     cp cms.config.example.json cms.config.json
     ```
 
-    > **Note:** Only `"type": "json"` is supported for metaCache, and `imageDirInsideContent` must be `true`.
+    > **Note:** Metadata caches are always stored at `<directory>/index.json` for each content type. `imageDirInsideContent` must be `true`.
 
 4. **(Optional) Set up environment variables**  
    See `.env.example` if provided.
@@ -64,11 +64,7 @@ Example:
         {
             "directory": "posts",
             "articleFile": "index.md",
-            "imageDirInsideContent": true,
-            "metaCache": {
-                "type": "json",
-                "path": "posts/index.json"
-            }
+            "imageDirInsideContent": true
         }
     ],
     "auth": {
@@ -93,8 +89,8 @@ Example:
 }
 ```
 
--   Only `"type": "json"` is supported for `metaCache`.
 -   `imageDirInsideContent` must be `true`.
+-   `index.json` caches are automatically placed at `<directory>/index.json` (no `metaCache` config needed).
 
 ### `frontmatter.scheme.json`
 

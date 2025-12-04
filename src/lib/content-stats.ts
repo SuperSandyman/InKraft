@@ -1,4 +1,4 @@
-import { getCmsConfig } from './content';
+import { getCmsConfig, getIndexJsonPath } from './content';
 import { getOctokitWithAuth } from './github-api';
 
 export interface ContentTypeCount {
@@ -17,24 +17,23 @@ export const fetchContentTypeCounts = async (): Promise<ContentTypeCount[]> => {
     for (let i = 0; i < config.content.length; i++) {
         const contentType = config.content[i];
         let count = 0;
-        if (contentType.metaCache?.path) {
-            try {
-                const { data: file } = await octokit.repos.getContent({
-                    owner,
-                    repo,
-                    path: contentType.metaCache.path,
-                    ref: branch
-                });
-                if ('content' in file && file.content) {
-                    const cacheContent = Buffer.from(file.content, 'base64').toString('utf-8');
-                    const arr = JSON.parse(cacheContent);
-                    if (Array.isArray(arr)) {
-                        count = arr.length;
-                    }
+        const cachePath = getIndexJsonPath(contentType.directory);
+        try {
+            const { data: file } = await octokit.repos.getContent({
+                owner,
+                repo,
+                path: cachePath,
+                ref: branch
+            });
+            if ('content' in file && file.content) {
+                const cacheContent = Buffer.from(file.content, 'base64').toString('utf-8');
+                const arr = JSON.parse(cacheContent);
+                if (Array.isArray(arr)) {
+                    count = arr.length;
                 }
-            } catch {
-                count = 0;
             }
+        } catch {
+            count = 0;
         }
         result.push({
             label: contentType.directory,

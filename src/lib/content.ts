@@ -24,10 +24,6 @@ export interface ContentTypeConfigItem {
     directory: string;
     articleFile: string;
     imageDirInsideContent?: boolean;
-    metaCache?: {
-        type: string;
-        path: string;
-    };
 }
 
 export interface CmsConfig {
@@ -41,16 +37,10 @@ export interface CmsConfig {
 }
 
 // zod スキーマ（厳格にはしすぎず、必須項目のみ検証）
-const MetaCacheSchema = z.object({
-    type: z.string(),
-    path: z.string()
-});
-
 const ContentItemSchema = z.object({
     directory: z.string(),
     articleFile: z.string(),
-    imageDirInsideContent: z.boolean().optional(),
-    metaCache: MetaCacheSchema.optional()
+    imageDirInsideContent: z.boolean().optional()
 });
 
 const WebhookEndpointSchema = z.object({
@@ -112,11 +102,7 @@ const getAllContentTypes = async () => {
         if (!exists) {
             contentTypes.push({
                 directory: config.draftDirectory,
-                articleFile: 'index.md',
-                metaCache: {
-                    type: 'json',
-                    path: `${config.draftDirectory}/index.json`
-                }
+                articleFile: 'index.md'
             });
         }
     }
@@ -124,6 +110,8 @@ const getAllContentTypes = async () => {
 };
 
 export { getCmsConfig, getAllContentTypes };
+
+export const getIndexJsonPath = (directory: string) => `${directory}/index.json`;
 
 export interface Content {
     slug: string;
@@ -337,35 +325,30 @@ export const fetchAllContentsFromGitHub = async (): Promise<Content[]> => {
     // draftDirectoryも含めたcontentTypeリストを取得
     const contentTypes = await getAllContentTypes();
     for (const contentType of contentTypes) {
-        const { directory, articleFile, metaCache } = contentType;
+        const { directory, articleFile } = contentType;
+        const cachePath = getIndexJsonPath(directory);
 
-        if (metaCache?.path) {
-            // キャッシュファイルの存在確認
-            const cacheExists = await checkCacheExists(octokit, owner, repo, metaCache.path, branch);
+        // キャッシュファイルの存在確認
+        const cacheExists = await checkCacheExists(octokit, owner, repo, cachePath, branch);
 
-            if (cacheExists) {
-                // キャッシュから読み込み
-                const cachedContents = await readCacheFile(octokit, owner, repo, metaCache.path, branch);
-                allContents.push(...cachedContents);
-            } else {
-                // キャッシュが存在しない場合は新規作成
-                const freshContents = await fetchContentsFromDirectory(
-                    octokit,
-                    owner,
-                    repo,
-                    directory,
-                    articleFile,
-                    branch
-                );
-                if (freshContents.length > 0) {
-                    await createCacheFile(octokit, owner, repo, metaCache.path, branch, freshContents);
-                }
-                allContents.push(...freshContents);
-            }
+        if (cacheExists) {
+            // キャッシュから読み込み
+            const cachedContents = await readCacheFile(octokit, owner, repo, cachePath, branch);
+            allContents.push(...cachedContents);
         } else {
-            // キャッシュ設定がない場合は直接取得
-            const contents = await fetchContentsFromDirectory(octokit, owner, repo, directory, articleFile, branch);
-            allContents.push(...contents);
+            // キャッシュが存在しない場合は新規作成
+            const freshContents = await fetchContentsFromDirectory(
+                octokit,
+                owner,
+                repo,
+                directory,
+                articleFile,
+                branch
+            );
+            if (freshContents.length > 0) {
+                await createCacheFile(octokit, owner, repo, cachePath, branch, freshContents);
+            }
+            allContents.push(...freshContents);
         }
     }
 
@@ -386,45 +369,24 @@ export const updateCacheForContent = async (
         const branch = config.branch || 'main';
         const octokit = await getOctokitWithAuth();
 
-        // draft含めた全contentTypeから検索
+        // 対象ディレクトリがcontent設定に存在するか確認（draft含む）
         const contentTypes = await getAllContentTypes();
-        const contentType = contentTypes.find((c) => c.directory === directory);
-        if (!contentType?.metaCache?.path) return; // キャッシュ設定がない場合はスキップ
+        const hasContentType = contentTypes.some((c) => c.directory === directory);
+        if (!hasContentType) return; // 設定に存在しないディレクトリはスキップ
 
-        const cachePath = contentType.metaCache.path;
+        const cachePath = getIndexJsonPath(directory);
 
-        // 既存のキャッシュを読み込み
-        let existingContents: Content[] = [];
-        let cacheSha: string | undefined;
-        try {
-            const { data: file } = await octokit.repos.getContent({
-                owner,
-                repo,
-                path: cachePath,
-                ref: branch
-            });
+        const applyOperation = (existingContents: Content[]): Content[] => {
+            const updatedContents = [...existingContents];
+            const existingIndex = updatedContents.findIndex((item) => item.slug === slug);
 
-            if ('content' in file && file.content) {
-                const cacheContent = Buffer.from(file.content, 'base64').toString('utf-8');
-                existingContents = JSON.parse(cacheContent);
+            if (operation === 'delete') {
+                if (existingIndex !== -1) {
+                    updatedContents.splice(existingIndex, 1);
+                }
+                return updatedContents;
             }
-            if ('sha' in file) {
-                cacheSha = file.sha;
-            }
-        } catch {
-            // キャッシュファイルが存在しない場合は空配列で開始
-        }
 
-        // 操作に応じてキャッシュを更新
-        const updatedContents = [...existingContents];
-        const existingIndex = updatedContents.findIndex((item) => item.slug === slug);
-
-        if (operation === 'delete') {
-            if (existingIndex !== -1) {
-                updatedContents.splice(existingIndex, 1);
-            }
-        } else {
-            // 本文の冒頭75文字を取得
             const excerpt = content.split('\n').find((line) => line.trim()) || '';
             const shortExcerpt = excerpt.length > 75 ? `${excerpt.substring(0, 75)}...` : excerpt;
             const newContent: Content = {
@@ -439,40 +401,90 @@ export const updateCacheForContent = async (
             } else if (operation === 'update' && existingIndex !== -1) {
                 updatedContents[existingIndex] = newContent;
             }
-        }
 
-        // 記事が0件になった場合はindex.jsonを削除し、再作成しない
-        if (updatedContents.length === 0) {
-            if (cacheSha) {
-                await octokit.repos.deleteFile({
+            return updatedContents;
+        };
+
+        const fetchCache = async (): Promise<{ contents: Content[]; sha?: string }> => {
+            let contents: Content[] = [];
+            let sha: string | undefined;
+            try {
+                const { data: file } = await octokit.repos.getContent({
                     owner,
                     repo,
                     path: cachePath,
-                    message: `Delete cache: ${cachePath}`,
-                    branch,
-                    sha: cacheSha
+                    ref: branch
                 });
+
+                if ('content' in file && file.content) {
+                    const cacheContent = Buffer.from(file.content, 'base64').toString('utf-8');
+                    contents = JSON.parse(cacheContent);
+                }
+                if ('sha' in file) {
+                    sha = file.sha;
+                }
+            } catch {
+                // キャッシュファイルが存在しない場合は空配列で開始
             }
-            return;
+            return { contents, sha };
+        };
+
+        const saveCache = async (baseCache: { contents: Content[]; sha?: string }) => {
+            const updatedContents = applyOperation(baseCache.contents);
+
+            // 記事が0件になった場合はindex.jsonを削除し、再作成しない
+            if (updatedContents.length === 0) {
+                if (baseCache.sha) {
+                    await octokit.repos.deleteFile({
+                        owner,
+                        repo,
+                        path: cachePath,
+                        message: `Delete cache: ${cachePath}`,
+                        branch,
+                        sha: baseCache.sha
+                    });
+                }
+                return;
+            }
+
+            const updatedCacheContent = JSON.stringify(updatedContents, null, 2);
+            const encodedContent = Buffer.from(updatedCacheContent, 'utf-8').toString('base64');
+
+            const params: import('@octokit/rest').RestEndpointMethodTypes['repos']['createOrUpdateFileContents']['parameters'] =
+                {
+                    owner,
+                    repo,
+                    path: cachePath,
+                    message: `Update cache: ${operation} ${slug} in ${directory}`,
+                    content: encodedContent,
+                    branch,
+                    ...(baseCache.sha ? { sha: baseCache.sha } : {})
+                };
+
+            await octokit.repos.createOrUpdateFileContents(params);
+        };
+
+        const initialCache = await fetchCache();
+
+        try {
+            await saveCache(initialCache);
+        } catch (error) {
+            const isConflict =
+                typeof error === 'object' &&
+                error !== null &&
+                'status' in error &&
+                (error as { status?: number }).status === 409;
+
+            if (!isConflict) throw error;
+
+            // 競合時は最新の内容を取得し直して1度だけ再試行
+            try {
+                const latestCache = await fetchCache();
+                await saveCache(latestCache);
+            } catch (retryError) {
+                console.error('キャッシュ更新に失敗 (retry):', retryError);
+            }
         }
-
-        // キャッシュファイルを更新
-        const updatedCacheContent = JSON.stringify(updatedContents, null, 2);
-        const encodedContent = Buffer.from(updatedCacheContent, 'utf-8').toString('base64');
-
-        // shaがundefinedの場合は渡さない
-        const params: import('@octokit/rest').RestEndpointMethodTypes['repos']['createOrUpdateFileContents']['parameters'] =
-            {
-                owner,
-                repo,
-                path: cachePath,
-                message: `Update cache: ${operation} ${slug} in ${directory}`,
-                content: encodedContent,
-                branch
-            };
-        if (cacheSha) params.sha = cacheSha;
-
-        await octokit.repos.createOrUpdateFileContents(params);
     } catch (error) {
         console.error('キャッシュ更新に失敗:', error);
         // キャッシュ更新の失敗は致命的ではないためエラーを投げない

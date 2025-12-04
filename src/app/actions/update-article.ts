@@ -2,6 +2,7 @@
 
 import matter from 'gray-matter';
 import type { Octokit } from '@octokit/rest';
+import { revalidatePath } from 'next/cache';
 
 import { getCmsConfig, updateCacheForContent } from '@/lib/content';
 import { convertDatesToSchemaFormat } from '@/lib/date-format';
@@ -250,6 +251,9 @@ export const updateArticle = async ({
             directory,
             repository: config.targetRepository
         }).catch((err) => console.error('Webhook発火に失敗（記事は保存済み）:', err));
+
+        // 記事一覧の再検証をトリガー
+        revalidatePath('/contents');
 
         return { success: true };
     } catch (error) {
