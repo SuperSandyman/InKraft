@@ -19,6 +19,16 @@ interface UpdateArticleParams {
     originalDirectory?: string;
 }
 
+const applyDraftFrontmatter = (
+    frontmatter: Record<string, unknown>,
+    directory: string,
+    draftDirectory?: string
+): Record<string, unknown> => {
+    const draftDir = draftDirectory || 'draft';
+    const isDraft = draftDir ? directory === draftDir : false;
+    return { ...frontmatter, draft: isDraft };
+};
+
 const collectFilesRecursively = async (
     octokit: Octokit,
     owner: string,
@@ -116,8 +126,10 @@ export const updateArticle = async ({
             return { success: false, error: 'ファイルが見つかりません' };
         }
 
+        const frontmatterWithDraft = applyDraftFrontmatter(frontmatter, directory, config.draftDirectory);
+
         // 日付をスキーマ指定フォーマットに変換
-        const formattedFrontmatter = await convertDatesToSchemaFormat(frontmatter);
+        const formattedFrontmatter = await convertDatesToSchemaFormat(frontmatterWithDraft);
 
         // frontmatterとcontentを結合してMarkdownファイルを生成
         const markdownContent = matter.stringify(contentForSave, formattedFrontmatter);
