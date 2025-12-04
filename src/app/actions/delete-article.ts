@@ -1,8 +1,9 @@
 'use server';
 
-import { getCmsConfig, updateCacheForContent, getAllContentTypes } from '@/lib/content';
+import { getCmsConfig, updateCacheForContent, getAllContentTypes, getIndexJsonPath } from '@/lib/content';
 import { getOctokitWithAuth } from '@/lib/github-api';
 import { triggerCmsWebhook } from '@/lib/webhook';
+import { revalidatePath } from 'next/cache';
 
 interface DeleteArticleParams {
     slug: string;
@@ -24,8 +25,8 @@ export const deleteArticle = async ({ slug, directory }: DeleteArticleParams): P
         let cachePath = '';
         let cacheSha = '';
 
-        if (contentType?.metaCache?.path) {
-            cachePath = contentType.metaCache.path;
+        if (contentType) {
+            cachePath = getIndexJsonPath(contentType.directory);
             // index.jsonの中身を取得
             try {
                 const { data: cacheFile } = await octokit.repos.getContent({
@@ -104,6 +105,9 @@ export const deleteArticle = async ({ slug, directory }: DeleteArticleParams): P
             directory,
             repository: config.targetRepository
         }).catch((err) => console.error('Webhook発火に失敗（記事は削除済み）:', err));
+
+        // 記事一覧の再検証をトリガー
+        revalidatePath('/contents');
 
         return true;
     } catch {

@@ -5,20 +5,12 @@
         {
             "directory": "posts",
             "articleFile": "index.md",
-            "imageDirInsideContent": true,
-            "metaCache": {
-                "type": "json",
-                "path": "posts/index.json"
-            }
+            "imageDirInsideContent": true
         },
         {
             "directory": "memo",
             "articleFile": "memo.md",
-            "imageDirInsideContent": true,
-            "metaCache": {
-                "type": "json",
-                "path": "memo/index.json"
-            }
+            "imageDirInsideContent": true
         }
     ],
     "webhooks": {

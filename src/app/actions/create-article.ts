@@ -1,6 +1,7 @@
 'use server';
 
 import matter from 'gray-matter';
+import { revalidatePath } from 'next/cache';
 
 import { getCmsConfig, updateCacheForContent } from '@/lib/content';
 import { convertDatesToSchemaFormat } from '@/lib/date-format';
@@ -14,6 +15,16 @@ interface CreateArticleParams {
     content: string;
     articleFile?: string;
 }
+
+const applyDraftFrontmatter = (
+    frontmatter: Record<string, unknown>,
+    directory: string,
+    draftDirectory?: string
+): Record<string, unknown> => {
+    const draftDir = draftDirectory || 'draft';
+    const isDraft = draftDir ? directory === draftDir : false;
+    return { ...frontmatter, draft: isDraft };
+};
 
 export const createArticle = async ({
     slug,
@@ -32,8 +43,10 @@ export const createArticle = async ({
         const sanitizedSlug = slug.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
         const filePath = `${directory}/${sanitizedSlug}/${articleFile}`;
 
+        const frontmatterWithDraft = applyDraftFrontmatter(frontmatter, directory, config.draftDirectory);
+
         // 日付をスキーマ指定フォーマットに変換
-        const formattedFrontmatter = await convertDatesToSchemaFormat(frontmatter);
+        const formattedFrontmatter = await convertDatesToSchemaFormat(frontmatterWithDraft);
 
         // frontmatterとcontentを結合してMarkdownファイルを生成
         const markdownContent = matter.stringify(content, formattedFrontmatter);
@@ -74,6 +87,9 @@ export const createArticle = async ({
             directory,
             repository: config.targetRepository
         }).catch((err) => console.error('Webhook発火に失敗（記事は保存済み）:', err));
+
+        // 記事一覧の再検証をトリガー
+        revalidatePath('/contents');
 
         return { success: true };
     } catch (error) {
