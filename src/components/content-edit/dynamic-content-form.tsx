@@ -100,17 +100,16 @@ const DynamicContentForm = ({
         formState: { errors },
         watch,
         setValue
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } = useForm<FrontmatterData>({
-        resolver: zodResolver(zodSchema),
+        resolver: zodResolver(zodSchema) as any,
         defaultValues
     });
 
     // ディレクトリ選択
     const watchedDirectory = watch('directory');
     const selectedDirectory: string =
-        typeof watchedDirectory === 'string' && watchedDirectory !== ''
-            ? watchedDirectory
-            : initialDirectory;
+        typeof watchedDirectory === 'string' && watchedDirectory !== '' ? watchedDirectory : initialDirectory;
 
     useEffect(() => {
         if (initialDirectory) {
