@@ -41,6 +41,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.vscode/mcp.json
+.vscode
 
 /docs
+
+## config files
+cms.config.json
+frontmatter.scheme.json
