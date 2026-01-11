@@ -39,6 +39,7 @@ const MdEditor = ({
     const [showPreview, setShowPreview] = useState<boolean>(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const editorRef = useRef<EditorView | null>(null);
+    const charCount = value.length;
 
     const dirRef = useRef(directory);
     const slugRef = useRef(slug);
@@ -201,6 +202,9 @@ const MdEditor = ({
 
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
                     画像をドラッグ＆ドロップまたはクリックしてアップロード
+                </span>
+                <span className="ml-auto text-xs text-muted-foreground whitespace-nowrap">
+                    文字数: <span className="font-medium text-foreground">{charCount.toLocaleString()}</span>
                 </span>
             </div>
 

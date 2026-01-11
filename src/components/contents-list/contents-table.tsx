@@ -55,13 +55,13 @@ const ContentsTable = ({ contents }: ContentsTableProps) => {
             <table className="w-full">
                 <thead>
                     <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium whitespace-nowrap">操作</th>
                         <th className="text-left py-3 px-4 font-medium whitespace-nowrap">タイトル</th>
                         <th className="text-left py-3 px-4 font-medium whitespace-nowrap">ステータス</th>
                         <th className="text-left py-3 px-4 font-medium whitespace-nowrap">カテゴリ</th>
                         <th className="text-left py-3 px-4 font-medium whitespace-nowrap">著者</th>
                         <th className="text-left py-3 px-4 font-medium whitespace-nowrap">公開日</th>
                         <th className="text-left py-3 px-4 font-medium whitespace-nowrap">更新日</th>
-                        <th className="text-left py-3 px-4 font-medium whitespace-nowrap">操作</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -77,6 +77,24 @@ const ContentsTable = ({ contents }: ContentsTableProps) => {
 
                         return (
                             <tr key={content.slug} className="border-b hover:bg-muted/50">
+                                <td className="py-3 px-4 whitespace-nowrap">
+                                    <div className="flex gap-2">
+                                        <a href={`/contents/${content.slug}/edit`}>
+                                            <Button variant="outline" size="sm">
+                                                編集
+                                            </Button>
+                                        </a>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            disabled={isPending}
+                                            onClick={() => handleDelete(content.slug, content.directory)}
+                                            className="border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                                        >
+                                            削除
+                                        </Button>
+                                    </div>
+                                </td>
                                 <td className="py-3 px-4 whitespace-nowrap">
                                     <div>
                                         <div className="font-medium line-clamp-1">{title}</div>
@@ -113,23 +131,6 @@ const ContentsTable = ({ contents }: ContentsTableProps) => {
                                     {formatDate(publishedAt) || '-'}
                                 </td>
                                 <td className="py-3 px-4 text-sm whitespace-nowrap">{formatDate(updatedAt) || '-'}</td>
-                                <td className="py-3 px-4 whitespace-nowrap">
-                                    <div className="flex gap-2">
-                                        <a href={`/contents/${content.slug}/edit`}>
-                                            <Button variant="outline" size="sm">
-                                                編集
-                                            </Button>
-                                        </a>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            disabled={isPending}
-                                            onClick={() => handleDelete(content.slug, content.directory)}
-                                        >
-                                            削除
-                                        </Button>
-                                    </div>
-                                </td>
                             </tr>
                         );
                     })}
