@@ -4,13 +4,15 @@ import * as React from 'react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Content } from '@/lib/content';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface GitHubHeatmapProps {
     articles: Content[];
 }
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-const GRID_DAYS = 365;
+const GRID_DAYS_DESKTOP = 365;
+const GRID_DAYS_MOBILE = 180; // 180日
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -38,11 +40,11 @@ const getDateCountMap = (articles: Content[]): Map<string, number> => {
     return dateCount;
 };
 
-const buildDays = (endDate: Date) => {
+const buildDays = (endDate: Date, gridDays: number) => {
     const endUTC = new Date(Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()));
-    const startUTC = new Date(endUTC.getTime() - (GRID_DAYS - 1) * MS_PER_DAY);
+    const startUTC = new Date(endUTC.getTime() - (gridDays - 1) * MS_PER_DAY);
     const days: Date[] = [];
-    for (let i = 0; i < GRID_DAYS; i += 1) {
+    for (let i = 0; i < gridDays; i += 1) {
         days.push(new Date(startUTC.getTime() + i * MS_PER_DAY));
     }
     return { startUTC, days };
@@ -78,8 +80,13 @@ const getLevel = (count: number, maxCount: number) => {
 };
 
 const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ articles }) => {
+    const isMobile = useIsMobile();
+    const gridDays = isMobile ? GRID_DAYS_MOBILE : GRID_DAYS_DESKTOP;
+    const cellSize = isMobile ? 10 : 14;
+    const cellGap = isMobile ? 3 : 6;
+
     const endDate = React.useMemo(() => new Date(), []);
-    const { startUTC, days } = React.useMemo(() => buildDays(endDate), [endDate]);
+    const { startUTC, days } = React.useMemo(() => buildDays(endDate, gridDays), [endDate, gridDays]);
     const dateCount = React.useMemo(() => getDateCountMap(articles), [articles]);
     const maxCount = React.useMemo(() => {
         let max = 0;
@@ -98,48 +105,64 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ articles }) => {
         });
     }, [weeks]);
 
+    const periodLabel = isMobile ? 'Last 180 days' : 'Last 12 months';
+
     return (
-        <Card className="sm:h-full h-auto flex flex-col">
-            <CardHeader>
+        <Card className="sm:h-full h-auto flex flex-col w-full min-w-0">
+            <CardHeader className="pb-2 sm:pb-2">
                 <CardTitle className="text-lg font-semibold">アクティビティ</CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col justify-between px-4 min-h-0">
-                <div className="overflow-x-auto">
-                    <div
-                        className="min-w-max rounded-xl bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.06)]"
-                        aria-label="GitHub style activity heatmap"
-                    >
-                        <div className="mb-2 flex items-center gap-3 text-xs text-muted-foreground">
-                            <span className="font-medium text-emerald-700">Last 12 months</span>
-                            <span>
-                                {formatDateKey(startUTC)} - {formatDateKey(days[days.length - 1])}
-                            </span>
-                        </div>
-                        <div className="flex items-start gap-3">
-                            <div className="mt-5 flex flex-col gap-[10px] text-[10px] text-muted-foreground">
+            <CardContent className="flex-1 min-h-0 min-w-0 p-3 sm:p-4 flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-2 text-xs text-muted-foreground">
+                    <span className="font-medium text-emerald-700 shrink-0">{periodLabel}</span>
+                    <span className="text-[10px] sm:text-xs text-right">
+                        {formatDateKey(startUTC)} - {formatDateKey(days[days.length - 1])}
+                    </span>
+                </div>
+
+                <div className="min-w-0 overflow-x-auto" aria-label="GitHub style activity heatmap">
+                    <div className="w-max">
+                        <div className="flex items-start gap-1 sm:gap-3">
+                            <div
+                                className="flex flex-col text-[8px] sm:text-[10px] text-muted-foreground flex-shrink-0"
+                                style={{ marginTop: cellSize + cellGap, gap: cellGap + cellSize - (isMobile ? 8 : 10) }}
+                            >
                                 {DAY_LABELS.map((label, index) => (
                                     <span key={label} className={index % 2 === 0 ? 'opacity-0' : ''}>
                                         {label}
                                     </span>
                                 ))}
                             </div>
-                            <div className="flex flex-col gap-2">
-                                <div className="flex gap-[6px] text-[10px] text-muted-foreground">
+                            <div className="flex flex-col flex-shrink-0" style={{ gap: cellGap }}>
+                                <div
+                                    className="flex text-[8px] sm:text-[10px] text-muted-foreground"
+                                    style={{ gap: cellGap }}
+                                >
                                     {monthLabels.map((label, index) => (
-                                        <span key={`${label}-${index}`} className="w-[14px]">
+                                        <span
+                                            key={`${label}-${index}`}
+                                            className="flex-shrink-0"
+                                            style={{ width: cellSize }}
+                                        >
                                             {label}
                                         </span>
                                     ))}
                                 </div>
-                                <div className="flex gap-[6px]" role="grid">
+                                <div className="flex" style={{ gap: cellGap }} role="grid">
                                     {weeks.map((week, weekIndex) => (
-                                        <div key={`week-${weekIndex}`} className="flex flex-col gap-[6px]" role="row">
+                                        <div
+                                            key={`week-${weekIndex}`}
+                                            className="flex flex-col flex-shrink-0"
+                                            style={{ gap: cellGap }}
+                                            role="row"
+                                        >
                                             {week.map((day, dayIndex) => {
                                                 if (!day) {
                                                     return (
                                                         <span
                                                             key={`empty-${weekIndex}-${dayIndex}`}
-                                                            className="h-[14px] w-[14px] rounded-[3px] bg-transparent"
+                                                            className="rounded-[2px] sm:rounded-[3px] bg-transparent flex-shrink-0"
+                                                            style={{ height: cellSize, width: cellSize }}
                                                         />
                                                     );
                                                 }
@@ -152,8 +175,12 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ articles }) => {
                                                         role="gridcell"
                                                         aria-label={`${key}: ${count} contributions`}
                                                         title={`${key}: ${count} contributions`}
-                                                        className="h-[14px] w-[14px] rounded-[3px] ring-1 ring-emerald-950/5 transition-transform duration-150 hover:scale-110"
-                                                        style={{ backgroundColor: COLORS[level] }}
+                                                        className="rounded-[2px] sm:rounded-[3px] ring-1 ring-emerald-950/5 transition-transform duration-150 hover:scale-110 flex-shrink-0"
+                                                        style={{
+                                                            height: cellSize,
+                                                            width: cellSize,
+                                                            backgroundColor: COLORS[level]
+                                                        }}
                                                     />
                                                 );
                                             })}
@@ -162,24 +189,23 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ articles }) => {
                                 </div>
                             </div>
                         </div>
-                        <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-                            <span className="font-medium text-emerald-700">
-                                {dateCount.size.toLocaleString()} days active
-                            </span>
-                            <div className="flex items-center gap-2">
-                                <span>Less</span>
-                                <div className="flex gap-1">
-                                    {COLORS.map((color, index) => (
-                                        <span
-                                            key={`${color}-${index}`}
-                                            className="h-[12px] w-[12px] rounded-[3px] ring-1 ring-emerald-950/5"
-                                            style={{ backgroundColor: color }}
-                                        />
-                                    ))}
-                                </div>
-                                <span>More</span>
-                            </div>
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-xs text-muted-foreground">
+                    <span className="font-medium text-emerald-700">{dateCount.size.toLocaleString()} days active</span>
+                    <div className="flex items-center gap-1 sm:gap-2">
+                        <span className="text-[10px] sm:text-xs">Less</span>
+                        <div className="flex gap-0.5 sm:gap-1">
+                            {COLORS.map((color, index) => (
+                                <span
+                                    key={`${color}-${index}`}
+                                    className="h-[10px] w-[10px] sm:h-[12px] sm:w-[12px] rounded-[2px] sm:rounded-[3px] ring-1 ring-emerald-950/5 flex-shrink-0"
+                                    style={{ backgroundColor: color }}
+                                />
+                            ))}
                         </div>
+                        <span className="text-[10px] sm:text-xs">More</span>
                     </div>
                 </div>
             </CardContent>
