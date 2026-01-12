@@ -43,7 +43,7 @@ const HackerNewsCard: React.FC = () => {
     const pageItems = newsList.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
 
     return (
-        <Card className="sm:h-full h-auto flex flex-col">
+        <Card className="sm:h-full h-auto flex flex-col w-full min-w-0">
             <CardHeader>
                 <CardTitle className="text-lg font-semibold">ニュース（HackerNewsより）</CardTitle>
             </CardHeader>

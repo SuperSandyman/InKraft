@@ -21,7 +21,7 @@ export const ChartPieDonutText: React.FC<ChartPieDonutTextProps> = ({ data }) =>
     }, [data]);
 
     return (
-        <Card className="sm:h-full h-auto flex flex-col">
+        <Card className="sm:h-full h-auto flex flex-col w-full min-w-0">
             <CardHeader>
                 <CardTitle className="text-lg font-semibold">コンテンツ分布</CardTitle>
             </CardHeader>

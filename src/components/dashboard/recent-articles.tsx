@@ -21,7 +21,7 @@ const getArrayField = (content: Content, fieldName: string): string[] => {
 
 const RecentArticles: React.FC<RecentArticlesProps> = ({ articles }) => {
     return (
-        <Card className="sm:h-full h-auto flex flex-col">
+        <Card className="sm:h-full h-auto flex flex-col w-full min-w-0">
             <CardHeader>
                 <CardTitle className="text-lg font-semibold">最近の記事</CardTitle>
             </CardHeader>

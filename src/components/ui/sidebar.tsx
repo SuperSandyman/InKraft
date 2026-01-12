@@ -20,6 +20,7 @@ const SIDEBAR_WIDTH = '16rem';
 const SIDEBAR_WIDTH_MOBILE = '18rem';
 const SIDEBAR_WIDTH_ICON = '3rem';
 const SIDEBAR_KEYBOARD_SHORTCUT = 'b';
+const MOBILE_BREAKPOINT = 768;
 
 type SidebarContextProps = {
     state: 'expanded' | 'collapsed';
@@ -77,10 +78,15 @@ function SidebarProvider({
         [setOpenProp, open]
     );
 
+    const isMobileViewport = React.useCallback(() => {
+        if (typeof window === 'undefined') return isMobile;
+        return window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`).matches;
+    }, [isMobile]);
+
     // Helper to toggle the sidebar.
     const toggleSidebar = React.useCallback(() => {
-        return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
-    }, [isMobile, setOpen, setOpenMobile]);
+        return isMobileViewport() ? setOpenMobile((open) => !open) : setOpen((open) => !open);
+    }, [isMobileViewport, setOpen]);
 
     // Adds a keyboard shortcut to toggle the sidebar.
     React.useEffect(() => {
