@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 import { getWebhookConfig, createWebhookPayload, shouldProcessEvent, validateWebhookConfig } from '@/lib/webhook';
 import type { WebhookEndpoint, GitHubCommit } from '@/lib/webhook';
@@ -18,10 +18,25 @@ interface GitHubWebhookPayload {
 
 // Webhook signature verification
 const verifyWebhookSignature = (payload: string, signature: string, secret: string): boolean => {
+    if (!signature.startsWith('sha256=')) {
+        return false;
+    }
+
+    const signatureHex = signature.slice('sha256='.length);
+    if (!/^[a-f0-9]{64}$/i.test(signatureHex)) {
+        return false;
+    }
+
     const hmac = createHmac('sha256', secret);
     hmac.update(payload);
-    const computedSignature = `sha256=${hmac.digest('hex')}`;
-    return computedSignature === signature;
+    const computedSignature = Buffer.from(hmac.digest('hex'), 'hex');
+    const receivedSignature = Buffer.from(signatureHex, 'hex');
+
+    if (computedSignature.length !== receivedSignature.length) {
+        return false;
+    }
+
+    return timingSafeEqual(computedSignature, receivedSignature);
 };
 
 // Trigger external webhooks
@@ -68,19 +83,27 @@ export async function POST(req: NextRequest) {
         const body = await req.text();
         const signature = req.headers.get('x-hub-signature-256');
         const githubEvent = req.headers.get('x-github-event');
-        // Verify webhook signature if secret is configured
-        if (config.secret && signature) {
-            if (!verifyWebhookSignature(body, signature, config.secret)) {
-                return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-            }
+
+        if (!config.secret) {
+            return NextResponse.json({ error: 'Webhook secret is not configured' }, { status: 500 });
         }
-        const payload = JSON.parse(body);
+        if (!signature) {
+            return NextResponse.json({ error: 'Missing signature' }, { status: 401 });
+        }
+        if (!verifyWebhookSignature(body, signature, config.secret)) {
+            return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+        }
+        if (!githubEvent) {
+            return NextResponse.json({ error: 'Missing event header' }, { status: 400 });
+        }
+
+        const payload = JSON.parse(body) as GitHubWebhookPayload;
         // Process different types of GitHub events
         let shouldTriggerWebhooks = false;
         switch (githubEvent) {
             case 'push':
                 // Check if this is a push to content directories or main branch
-                if (payload.ref === `refs/heads/${payload.repository.default_branch}`) {
+                if (payload.ref === `refs/heads/${payload.repository?.default_branch}`) {
                     shouldTriggerWebhooks = true;
                 }
                 break;

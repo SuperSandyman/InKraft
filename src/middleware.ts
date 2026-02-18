@@ -1,13 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-
-const allowedUsernamesEnv = process.env.ALLOWED_USERS ?? '';
-const allowedUsernames = new Set(
-    allowedUsernamesEnv
-        .split(',')
-        .map((u) => u.trim())
-        .filter(Boolean)
-);
+import { isUserAllowed } from '@/lib/allowed-users';
 
 export default auth((req) => {
     const session = req.auth;
@@ -24,8 +17,7 @@ export default auth((req) => {
         return NextResponse.redirect(url);
     }
 
-    const username = session?.user?.name ?? '';
-    const isAllowed = username && allowedUsernames.has(username);
+    const isAllowed = isUserAllowed(session);
 
     if (session && !isAllowed && path !== '/unauthorized') {
         url.pathname = '/unauthorized';
