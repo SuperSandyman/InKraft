@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { auth } from '@/auth';
+import { isUserAllowed } from '@/lib/allowed-users';
 import { uploadImageToGitHub } from '@/lib/upload-image';
 
 export async function POST(req: NextRequest) {
     try {
+        const session = await auth();
+        if (!session) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        if (!isUserAllowed(session)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
         const formData = await req.formData();
         const directory = formData.get('directory');
         const slug = formData.get('slug');
@@ -11,6 +21,9 @@ export async function POST(req: NextRequest) {
         if (typeof directory !== 'string' || typeof slug !== 'string' || !(file instanceof File)) {
             console.error('Invalid params', { directory, slug, fileType: typeof file, file });
             return NextResponse.json({ error: 'invalid params' }, { status: 400 });
+        }
+        if (file.size === 0) {
+            return NextResponse.json({ error: 'empty file' }, { status: 400 });
         }
         // File→ArrayBuffer→Buffer
         const arrayBuffer = await file.arrayBuffer();

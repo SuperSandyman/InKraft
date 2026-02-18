@@ -1,7 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 import { createVertex } from '@ai-sdk/google-vertex';
 import { generateText } from 'ai';
+import { auth } from '@/auth';
+import { isUserAllowed } from '@/lib/allowed-users';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 const HN_API = 'https://hacker-news.firebaseio.com/v0/topstories.json';
 const HN_ITEM_API = 'https://hacker-news.firebaseio.com/v0/item';
@@ -49,7 +52,21 @@ async function translateTitle(title: string): Promise<string> {
     return translated;
 }
 
-export async function GET() {
+export async function GET(_req: NextRequest) {
+    const session = await auth();
+    if (!session) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (!isUserAllowed(session)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const requestKey = session.user.githubId || session.user.githubLogin || session.user.email || 'unknown-user';
+    const limit = checkRateLimit(`hackernews:${requestKey}`, { windowMs: 10 * 60 * 1000, maxRequests: 60 });
+    if (!limit.allowed) {
+        return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     // メモリキャッシュ
     if (memoryCache && memoryCache.expires > Date.now()) {
         return NextResponse.json(memoryCache.data);
