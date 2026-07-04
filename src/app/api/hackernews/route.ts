@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { createVertex } from '@ai-sdk/google-vertex';
 import { generateText } from 'ai';
@@ -52,7 +52,7 @@ async function translateTitle(title: string): Promise<string> {
     return translated;
 }
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
     const session = await auth();
     if (!session) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

@@ -42,6 +42,7 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
     const [content, setContent] = useState<string>(DEFAULT_CONTENT);
     const initialContentRef = useRef<string>(DEFAULT_CONTENT);
     const [formMeta, setFormMeta] = useState<FrontmatterData & { directory?: string }>({ slug: '' });
+    const [initialFormValues, setInitialFormValues] = useState<FrontmatterData & { directory?: string }>({ slug: '' });
     const initialMetaRef = useRef<(FrontmatterData & { directory?: string }) | null>(null);
     const hasCapturedInitialMetaRef = useRef<boolean>(false);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -66,9 +67,7 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
 
     const handleFormSubmit = async (formData: FrontmatterData & { directory: string }) => {
         setIsSubmitting(true);
-        console.log('handleFormSubmit: formData =', formData);
         const slug = (formData.slug ?? '').toString();
-        console.log('handleFormSubmit: slug =', slug, 'typeof:', typeof slug);
         try {
             if (!slug || slug.trim() === '') {
                 alert('スラッグを入力してください');
@@ -103,6 +102,7 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
                     directory,
                     slug: sanitizedSlug
                 }) as FrontmatterData & { directory?: string };
+                setInitialFormValues(initialMetaRef.current);
                 // 即座にリダイレクト（キャッシュ更新は裏で実行中）
                 router.push('/contents');
                 // キャッシュ再検証をトリガー
@@ -126,15 +126,11 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
         const clonedMeta = normalizeMeta(mergedMeta) as FrontmatterData & { directory?: string };
         if (!hasCapturedInitialMetaRef.current) {
             initialMetaRef.current = { ...clonedMeta };
+            setInitialFormValues(clonedMeta);
             hasCapturedInitialMetaRef.current = true;
         }
         setFormMeta(clonedMeta);
     }, []);
-
-    useEffect(() => {
-        console.log('[MdEditor debug] directory:', typeof formMeta.directory, formMeta.directory);
-        console.log('[MdEditor debug] slug:', typeof formMeta.slug, formMeta.slug);
-    }, [formMeta.directory, formMeta.slug]);
 
     const handleGenerateTemplate = async () => {
         setIsGenerating(true);
@@ -220,7 +216,7 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
                                 onSubmit={handleFormSubmit}
                                 isSubmitting={isSubmitting}
                                 directories={directories}
-                                initialValues={initialMetaRef.current ?? formMeta}
+                                initialValues={initialFormValues}
                                 onChange={handleFormMetaChange}
                             />
                         </div>
@@ -269,7 +265,7 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
                                 onSubmit={handleFormSubmit}
                                 isSubmitting={isSubmitting}
                                 directories={directories}
-                                initialValues={initialMetaRef.current ?? formMeta}
+                                initialValues={initialFormValues}
                                 onChange={handleFormMetaChange}
                             />
                         </div>

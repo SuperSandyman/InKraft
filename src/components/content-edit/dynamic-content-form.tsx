@@ -1,5 +1,5 @@
 import { useMemo, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useWatch, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z, ZodString, ZodArray } from 'zod';
 
@@ -98,16 +98,14 @@ const DynamicContentForm = ({
         control,
         handleSubmit,
         formState: { errors },
-        watch,
         setValue
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } = useForm<FrontmatterData>({
-        resolver: zodResolver(zodSchema) as any,
+        resolver: zodResolver(zodSchema) as Resolver<FrontmatterData>,
         defaultValues
     });
 
     // ディレクトリ選択
-    const watchedDirectory = watch('directory');
+    const watchedDirectory = useWatch({ control, name: 'directory' });
     const selectedDirectory: string =
         typeof watchedDirectory === 'string' && watchedDirectory !== '' ? watchedDirectory : initialDirectory;
 
@@ -119,7 +117,7 @@ const DynamicContentForm = ({
     }, [initialDirectory]);
 
     // 値の変化をonChangeで通知
-    const watchedFields = watch();
+    const watchedFields = useWatch({ control });
     useEffect(() => {
         if (onChange) {
             onChange({ ...watchedFields, directory: selectedDirectory });
