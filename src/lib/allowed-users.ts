@@ -1,4 +1,4 @@
-import type { Session } from 'next-auth';
+import type { AppSession } from '@/types/auth';
 
 type AllowedUserField = 'any' | 'id' | 'login' | 'email' | 'name';
 
@@ -62,7 +62,7 @@ const matchesRule = (
     }
 };
 
-export const isUserAllowed = (session: Session | null | undefined, rules: AllowedUserRule[] = allowedUsers): boolean => {
+export const isUserAllowed = (session: AppSession | null | undefined, rules: AllowedUserRule[] = allowedUsers): boolean => {
     if (!session?.user || rules.length === 0) {
         return false;
     }

@@ -1,9 +1,8 @@
-import type { Session } from 'next-auth';
-
 import { auth } from '@/auth';
+import type { AppSession } from '@/types/auth';
 import { isUserAllowed } from './allowed-users';
 
-export const requireAllowedSession = async (): Promise<Session> => {
+export const requireAllowedSession = async (): Promise<AppSession> => {
     const session = await auth();
 
     if (!session) {

@@ -22,9 +22,10 @@ jobs:
     timeout-minutes: 15
 
     env:
-      AUTH_SECRET: ci-auth-secret
-      AUTH_GITHUB_ID: ci-github-client-id
-      AUTH_GITHUB_SECRET: ci-github-client-secret
+      BETTER_AUTH_SECRET: ci-auth-secret-at-least-32-characters-long
+      BETTER_AUTH_URL: http://localhost:3000
+      GITHUB_CLIENT_ID: ci-github-client-id
+      GITHUB_CLIENT_SECRET: ci-github-client-secret
       ALLOWED_USERS: login:ci-user
       GOOGLE_CREDENTIALS_JSON: "{}"
       GOOGLE_VERTEX_PROJECT_ID: ci-project
