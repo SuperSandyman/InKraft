@@ -4,10 +4,19 @@ import matter from 'gray-matter';
 import type { Octokit } from '@octokit/rest';
 import { revalidatePath } from 'next/cache';
 
-import { getCmsConfig, updateCacheForContent } from '@/lib/content';
+import { getAllContentTypes, getCmsConfig, updateCacheForContent } from '@/lib/content';
+import {
+    assertSafeRepositoryPath,
+    assertSafeRepositoryPathSegment,
+    assertValidSlug,
+    resolveArticleFile,
+    resolveContentType,
+    sanitizeSlug
+} from '@/lib/content-path';
 import { convertDatesToSchemaFormat } from '@/lib/date-format';
 import { getOctokitWithAuth } from '@/lib/github-api';
 import { replaceRawUrlWithFileNameInMarkdown } from '@/lib/github-path';
+import { requireAllowedSession } from '@/lib/server-auth';
 import { triggerCmsWebhook } from '@/lib/webhook';
 
 interface UpdateArticleParams {
@@ -92,11 +101,12 @@ export const updateArticle = async ({
     directory,
     frontmatter,
     content,
-    articleFile = 'index.md',
+    articleFile,
     originalSlug,
     originalDirectory
 }: UpdateArticleParams): Promise<{ success: boolean; error?: string }> => {
     try {
+        await requireAllowedSession();
         // 保存前にraw URLが含まれている場合のみ変換
         let contentForSave = content;
         if (/https:\/\/raw\.githubusercontent\.com\//.test(content)) {
@@ -107,13 +117,22 @@ export const updateArticle = async ({
         const [owner, repo] = config.targetRepository.split('/');
         const branch = config.branch || 'main';
         const octokit = await getOctokitWithAuth();
+        const contentTypes = await getAllContentTypes();
+        const targetContentType = resolveContentType(contentTypes, directory);
+        const resolvedArticleFile = resolveArticleFile(targetContentType, articleFile);
 
-        const currentSlug = originalSlug || slug;
-        const currentDirectory = originalDirectory || directory;
+        const sanitizedSlug = sanitizeSlug(slug);
+        assertValidSlug(sanitizedSlug);
+
+        const currentSlug = originalSlug || sanitizedSlug;
+        assertSafeRepositoryPathSegment(currentSlug, 'slug');
+        const currentDirectory = originalDirectory || targetContentType.directory;
+        const sourceContentType = resolveContentType(contentTypes, currentDirectory);
+        assertSafeRepositoryPath(resolvedArticleFile, 'articleFile');
         const sourceBasePath = `${currentDirectory}/${currentSlug}`;
-        const targetBasePath = `${directory}/${slug}`;
-        const sourceFilePath = `${sourceBasePath}/${articleFile}`;
-        const targetFilePath = `${targetBasePath}/${articleFile}`;
+        const targetBasePath = `${targetContentType.directory}/${sanitizedSlug}`;
+        const sourceFilePath = `${sourceBasePath}/${sourceContentType.articleFile}`;
+        const targetFilePath = `${targetBasePath}/${resolvedArticleFile}`;
 
         // 既存ファイルのSHAを取得
         const { data: existingFile } = await octokit.repos.getContent({
@@ -127,7 +146,7 @@ export const updateArticle = async ({
             return { success: false, error: 'ファイルが見つかりません' };
         }
 
-        const frontmatterWithDraft = applyDraftFrontmatter(frontmatter, directory, config.draftDirectory);
+        const frontmatterWithDraft = applyDraftFrontmatter(frontmatter, targetContentType.directory, config.draftDirectory);
 
         // 日付をスキーマ指定フォーマットに変換
         const formattedFrontmatter = await convertDatesToSchemaFormat(frontmatterWithDraft);
@@ -173,7 +192,10 @@ export const updateArticle = async ({
             }> = [];
 
             for (const asset of assetFiles) {
-                const targetPath = asset.path.replace(sourceBasePath, targetBasePath);
+                if (!asset.path.startsWith(`${sourceBasePath}/`)) {
+                    return { success: false, error: 'コピー対象のファイルパスが不正です' };
+                }
+                const targetPath = `${targetBasePath}${asset.path.slice(sourceBasePath.length)}`;
                 treeChanges.push({
                     path: targetPath,
                     mode: '100644',
@@ -226,31 +248,30 @@ export const updateArticle = async ({
                 sha: newCommit.sha
             });
 
-            // キャッシュ更新（非同期・fire-and-forget）
-            updateCacheForContent(currentDirectory, currentSlug, {}, '', 'delete').catch(console.error);
-            updateCacheForContent(directory, slug, formattedFrontmatter, contentForSave, 'create').catch(console.error);
+            // キャッシュ更新
+            await updateCacheForContent(currentDirectory, currentSlug, {}, '', 'delete');
+            await updateCacheForContent(targetContentType.directory, sanitizedSlug, formattedFrontmatter, contentForSave, 'create');
         } else {
             // slugが変更されていない場合は通常の更新
             await octokit.repos.createOrUpdateFileContents({
                 owner,
                 repo,
                 path: sourceFilePath,
-                message: `Update article: ${slug}`,
+                message: `Update article: ${sanitizedSlug}`,
                 content: encodedContent,
                 sha: existingFile.sha,
                 branch
             });
 
-            // index.json キャッシュを更新（非同期・fire-and-forget）
-            updateCacheForContent(directory, slug, formattedFrontmatter, contentForSave, 'update').catch(console.error);
+            // index.json キャッシュを更新
+            await updateCacheForContent(targetContentType.directory, sanitizedSlug, formattedFrontmatter, contentForSave, 'update');
         }
 
-        // Webhookを発火（非同期・fire-and-forget）
-        triggerCmsWebhook('update', {
-            slug,
-            directory,
+        await triggerCmsWebhook('update', {
+            slug: sanitizedSlug,
+            directory: targetContentType.directory,
             repository: config.targetRepository
-        }).catch((err) => console.error('Webhook発火に失敗（記事は保存済み）:', err));
+        });
 
         // 記事一覧の再検証をトリガー
         revalidatePath('/contents');

@@ -1,16 +1,15 @@
 'use client';
 
-import { ChevronRight, type LucideIcon } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { type LucideIcon } from 'lucide-react';
 
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
     SidebarGroup,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    SidebarMenuSub,
-    SidebarMenuSubButton,
-    SidebarMenuSubItem
+    useSidebar
 } from '@/components/ui/sidebar';
 
 export function NavMain({
@@ -21,41 +20,43 @@ export function NavMain({
         url: string;
         icon?: LucideIcon;
         isActive?: boolean;
-        items?: {
-            title: string;
-            url: string;
-        }[];
     }[];
 }) {
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const { isMobile } = useSidebar();
+
     return (
-        <SidebarGroup>
-            <SidebarMenu>
-                {items.map((item) => (
-                    <Collapsible key={item.title} asChild defaultOpen={item.isActive} className="group/collapsible">
-                        <SidebarMenuItem>
-                            <CollapsibleTrigger asChild>
-                                <SidebarMenuButton tooltip={item.title}>
-                                    {item.icon && <item.icon />}
-                                    <span>{item.title}</span>
-                                    <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                                </SidebarMenuButton>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                                <SidebarMenuSub>
-                                    {item.items?.map((subItem) => (
-                                        <SidebarMenuSubItem key={subItem.title}>
-                                            <SidebarMenuSubButton asChild>
-                                                <a href={subItem.url}>
-                                                    <span>{subItem.title}</span>
-                                                </a>
-                                            </SidebarMenuSubButton>
-                                        </SidebarMenuSubItem>
-                                    ))}
-                                </SidebarMenuSub>
-                            </CollapsibleContent>
+        <SidebarGroup className="p-0 md:items-center">
+            <SidebarMenu className="gap-2 md:items-center">
+                {items.map((item) => {
+                    const [itemPath, itemQuery] = item.url.split('?');
+                    const itemStatus = new URLSearchParams(itemQuery).get('status');
+                    const currentStatus = searchParams.get('status');
+                    const isActive =
+                        item.url === '/'
+                            ? pathname === '/'
+                            : itemStatus
+                              ? pathname === itemPath && currentStatus === itemStatus
+                              : pathname === item.url && !currentStatus;
+
+                    return (
+                        <SidebarMenuItem key={item.title}>
+                            <SidebarMenuButton
+                                asChild
+                                tooltip={item.title}
+                                isActive={isActive}
+                                size="lg"
+                                className="h-12 justify-start gap-3 rounded-lg text-[13px] font-bold md:size-12 md:justify-center md:p-0"
+                            >
+                                <Link href={item.url} aria-label={item.title}>
+                                    {item.icon && <item.icon className="size-5" />}
+                                    {isMobile && <span>{item.title}</span>}
+                                </Link>
+                            </SidebarMenuButton>
                         </SidebarMenuItem>
-                    </Collapsible>
-                ))}
+                    );
+                })}
             </SidebarMenu>
         </SidebarGroup>
     );

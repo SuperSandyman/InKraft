@@ -17,10 +17,10 @@ const Pagination = ({ totalPages, currentPage, status }: PaginationProps) => {
                         pathname: '/contents',
                         query: status === 'all' ? { page } : { page, status }
                     }}
-                    className={`px-3 py-1 rounded-md border text-sm font-medium transition-colors ${
+                    className={`rounded-full border px-3 py-1 text-sm font-bold transition-colors ${
                         currentPage === page
                             ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-background text-foreground border-muted hover:bg-muted'
+                            : 'bg-white text-foreground border-border hover:bg-accent hover:text-primary'
                     }`}
                 >
                     {page}

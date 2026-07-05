@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { NextResponse, type NextRequest } from 'next/server';
+
+import { getSessionFromHeaders } from '@/auth';
 import { isUserAllowed } from '@/lib/allowed-users';
 
-export default auth((req) => {
-    const session = req.auth;
+export async function proxy(req: NextRequest) {
+    const session = await getSessionFromHeaders(req.headers);
     const url = req.nextUrl.clone();
     const path = url.pathname;
 
@@ -25,7 +26,7 @@ export default auth((req) => {
     }
 
     return NextResponse.next();
-});
+}
 
 export const config = {
     matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)']

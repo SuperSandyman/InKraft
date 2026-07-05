@@ -27,7 +27,6 @@ const HackerNewsCard: React.FC = () => {
 
     React.useEffect(() => {
         let ignore = false;
-        setLoading(true);
         fetchHackerNews().then((data) => {
             if (!ignore) {
                 setNewsList(data);

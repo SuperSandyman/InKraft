@@ -11,10 +11,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Separator } from '@/components/ui/separator';
 // パンくずは共通コンポーネントを使用
 import Breadcrumbs from '@/components/common/breadcrumbs';
 import { useNavigationGuard } from '@/hooks/use-navigation-guard';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ContentNewClientProps {
     schema: FrontmatterSchema;
@@ -39,9 +39,11 @@ const normalizeMeta = (meta: FrontmatterData & { directory?: string } = { slug: 
 
 const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) => {
     const router = useRouter();
+    const isMobile = useIsMobile();
     const [content, setContent] = useState<string>(DEFAULT_CONTENT);
     const initialContentRef = useRef<string>(DEFAULT_CONTENT);
     const [formMeta, setFormMeta] = useState<FrontmatterData & { directory?: string }>({ slug: '' });
+    const [initialFormValues, setInitialFormValues] = useState<FrontmatterData & { directory?: string }>({ slug: '' });
     const initialMetaRef = useRef<(FrontmatterData & { directory?: string }) | null>(null);
     const hasCapturedInitialMetaRef = useRef<boolean>(false);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -66,9 +68,7 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
 
     const handleFormSubmit = async (formData: FrontmatterData & { directory: string }) => {
         setIsSubmitting(true);
-        console.log('handleFormSubmit: formData =', formData);
         const slug = (formData.slug ?? '').toString();
-        console.log('handleFormSubmit: slug =', slug, 'typeof:', typeof slug);
         try {
             if (!slug || slug.trim() === '') {
                 alert('スラッグを入力してください');
@@ -103,7 +103,7 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
                     directory,
                     slug: sanitizedSlug
                 }) as FrontmatterData & { directory?: string };
-                // 即座にリダイレクト（キャッシュ更新は裏で実行中）
+                setInitialFormValues(initialMetaRef.current);
                 router.push('/contents');
                 // キャッシュ再検証をトリガー
                 router.refresh();
@@ -126,15 +126,11 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
         const clonedMeta = normalizeMeta(mergedMeta) as FrontmatterData & { directory?: string };
         if (!hasCapturedInitialMetaRef.current) {
             initialMetaRef.current = { ...clonedMeta };
+            setInitialFormValues(clonedMeta);
             hasCapturedInitialMetaRef.current = true;
         }
         setFormMeta(clonedMeta);
     }, []);
-
-    useEffect(() => {
-        console.log('[MdEditor debug] directory:', typeof formMeta.directory, formMeta.directory);
-        console.log('[MdEditor debug] slug:', typeof formMeta.slug, formMeta.slug);
-    }, [formMeta.directory, formMeta.slug]);
 
     const handleGenerateTemplate = async () => {
         setIsGenerating(true);
@@ -163,12 +159,50 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
         }
     };
 
+    const aiTemplateForm = (
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-base font-semibold">AIで記事テンプレート作成</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        handleGenerateTemplate();
+                    }}
+                    className="flex flex-col gap-3"
+                >
+                    <Input
+                        type="text"
+                        placeholder="どんな記事を書きますか？"
+                        value={aiPrompt}
+                        onChange={(e) => setAiPrompt(e.target.value)}
+                        disabled={isGenerating}
+                    />
+                    <Button type="submit" disabled={!aiPrompt || isGenerating} className="w-full">
+                        {isGenerating ? '生成中...' : 'テンプレート生成'}
+                    </Button>
+                </form>
+            </CardContent>
+        </Card>
+    );
+
+    const metadataForm = (
+        <DynamicContentForm
+            schema={schema}
+            onSubmit={handleFormSubmit}
+            isSubmitting={isSubmitting}
+            directories={directories}
+            initialValues={initialFormValues}
+            onChange={handleFormMetaChange}
+        />
+    );
+
     return (
         <>
-            <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-                <div className="flex items-center gap-2 px-4">
-                    <SidebarTrigger className="-ml-1" />
-                    <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+            <header className="sticky top-0 z-20 flex h-20 shrink-0 items-center gap-3 border-b border-border/70 bg-white/88 px-4 backdrop-blur-md transition-[width,height] ease-linear md:px-8 group-has-data-[collapsible=icon]/sidebar-wrapper:h-16">
+                <div className="flex min-w-0 items-center gap-3">
+                    <SidebarTrigger className="size-9 rounded-lg md:hidden" />
                     <Breadcrumbs
                         items={[
                             { label: 'ダッシュボード', href: '/' },
@@ -178,101 +212,49 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
                     />
                 </div>
             </header>
-            <div className="flex flex-1 flex-col gap-6 p-4 pt-0">
+            <div className="flex flex-1 flex-col gap-6 p-4 md:p-8">
                 <div className="space-y-6">
-                    <div className="px-2 md:px-4 mt-8 mb-6">
-                        <h1 className="text-2xl font-bold tracking-tight mb-2">新規記事作成</h1>
-                        <p className="text-base text-muted-foreground">
+                    <div>
+                        <h1 className="mb-2 text-2xl font-extrabold tracking-normal text-slate-950">新規記事作成</h1>
+                        <p className="text-sm font-bold text-muted-foreground">
                             記事の内容とメタデータを入力して新しい記事を作成します。
                         </p>
                     </div>
-                    {/* PC: メタデータ右/ モバイル: メタデータ上 */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-2 md:px-4">
-                        {/* モバイル時: メタデータ・AI生成を上に表示 */}
-                        <div className="lg:hidden space-y-4 order-1">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-base font-semibold">AIで記事テンプレート作成</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <form
-                                        onSubmit={(e) => {
-                                            e.preventDefault();
-                                            handleGenerateTemplate();
-                                        }}
-                                        className="flex flex-col gap-3"
-                                    >
-                                        <Input
-                                            type="text"
-                                            placeholder="どんな記事を書きますか？"
-                                            value={aiPrompt}
-                                            onChange={(e) => setAiPrompt(e.target.value)}
-                                            disabled={isGenerating}
-                                        />
-                                        <Button type="submit" disabled={!aiPrompt || isGenerating} className="w-full">
-                                            {isGenerating ? '生成中...' : 'テンプレート生成'}
-                                        </Button>
-                                    </form>
-                                </CardContent>
-                            </Card>
-                            <DynamicContentForm
-                                schema={schema}
-                                onSubmit={handleFormSubmit}
-                                isSubmitting={isSubmitting}
-                                directories={directories}
-                                initialValues={initialMetaRef.current ?? formMeta}
-                                onChange={handleFormMetaChange}
-                            />
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                        {isMobile && (
+                        <div className="space-y-3 lg:hidden">
+                            <details className="rounded-lg border border-border/70 bg-white shadow-[0_12px_32px_rgba(27,42,71,0.07)]">
+                                <summary className="cursor-pointer px-4 py-3 text-sm font-extrabold text-slate-900">
+                                    AIで記事テンプレート作成
+                                </summary>
+                                <div className="border-t border-border/60 p-3">{aiTemplateForm}</div>
+                            </details>
+                            <details className="rounded-lg border border-border/70 bg-white shadow-[0_12px_32px_rgba(27,42,71,0.07)]">
+                                <summary className="cursor-pointer px-4 py-3 text-sm font-extrabold text-slate-900">
+                                    記事メタデータ
+                                </summary>
+                                <div className="border-t border-border/60 p-3">{metadataForm}</div>
+                            </details>
                         </div>
-                        {/* PC: エディタ左/ モバイル: 下 */}
-                        <div className="lg:col-span-2 space-y-4">
-                            <div className="bg-card rounded-lg border p-4">
-                                <h2 className="text-lg font-semibold mb-4">記事内容</h2>
+                        )}
+                        <div className="min-w-0 space-y-4 lg:col-span-2">
+                            <div className="-mx-2 rounded-lg border border-border/70 bg-white p-2 shadow-[0_12px_32px_rgba(27,42,71,0.07)] sm:mx-0 sm:p-4">
+                                <h2 className="mb-3 px-1 text-lg font-bold sm:px-0">記事内容</h2>
                                 <MdEditor
                                     value={content}
                                     onChange={handleContentChange}
-                                    height={700}
+                                    height={640}
                                     directory={typeof formMeta.directory === 'string' ? formMeta.directory : ''}
                                     slug={typeof formMeta.slug === 'string' ? formMeta.slug : ''}
                                 />
                             </div>
                         </div>
-                        {/* PC: メタデータ右/ モバイル: 非表示 */}
+                        {!isMobile && (
                         <div className="lg:col-span-1 space-y-4 order-3 hidden lg:block">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-base font-semibold">AIで記事テンプレート作成</CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <form
-                                        onSubmit={(e) => {
-                                            e.preventDefault();
-                                            handleGenerateTemplate();
-                                        }}
-                                        className="flex flex-col gap-3"
-                                    >
-                                        <Input
-                                            type="text"
-                                            placeholder="どんな記事を書きますか？"
-                                            value={aiPrompt}
-                                            onChange={(e) => setAiPrompt(e.target.value)}
-                                            disabled={isGenerating}
-                                        />
-                                        <Button type="submit" disabled={!aiPrompt || isGenerating} className="w-full">
-                                            {isGenerating ? '生成中...' : 'テンプレート生成'}
-                                        </Button>
-                                    </form>
-                                </CardContent>
-                            </Card>
-                            <DynamicContentForm
-                                schema={schema}
-                                onSubmit={handleFormSubmit}
-                                isSubmitting={isSubmitting}
-                                directories={directories}
-                                initialValues={initialMetaRef.current ?? formMeta}
-                                onChange={handleFormMetaChange}
-                            />
+                            {aiTemplateForm}
+                            {metadataForm}
                         </div>
+                        )}
                     </div>
                 </div>
             </div>

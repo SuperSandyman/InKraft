@@ -54,7 +54,7 @@ const triggerExternalWebhooks = async (eventType: string, payload: GitHubWebhook
     const filteredEndpoints = config.endpoints.filter((endpoint) => shouldProcessEvent(eventType, endpoint));
     const promises = filteredEndpoints.map(async (endpoint: WebhookEndpoint) => {
         try {
-            await fetch(endpoint.url, {
+            const response = await fetch(endpoint.url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -62,8 +62,11 @@ const triggerExternalWebhooks = async (eventType: string, payload: GitHubWebhook
                 },
                 body: JSON.stringify(webhookEvent)
             });
-        } catch {
-            // ignore error
+            if (!response.ok) {
+                console.error(`External webhook endpoint failed: ${endpoint.name} ${response.status} ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error(`External webhook endpoint error: ${endpoint.name}`, error);
         }
     });
     await Promise.allSettled(promises);

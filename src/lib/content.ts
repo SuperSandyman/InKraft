@@ -483,10 +483,11 @@ export const updateCacheForContent = async (
                 await saveCache(latestCache);
             } catch (retryError) {
                 console.error('キャッシュ更新に失敗 (retry):', retryError);
+                throw retryError;
             }
         }
     } catch (error) {
         console.error('キャッシュ更新に失敗:', error);
-        // キャッシュ更新の失敗は致命的ではないためエラーを投げない
+        throw error;
     }
 };
