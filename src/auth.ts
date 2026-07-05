@@ -7,15 +7,65 @@ import type { AppSession } from '@/types/auth';
 
 const githubClientId = process.env.GITHUB_CLIENT_ID || process.env.AUTH_GITHUB_ID || '';
 const githubClientSecret = process.env.GITHUB_CLIENT_SECRET || process.env.AUTH_GITHUB_SECRET || '';
-const authBaseURL =
-    process.env.BETTER_AUTH_URL ||
-    process.env.NEXT_PUBLIC_BETTER_AUTH_URL ||
-    process.env.AUTH_URL ||
-    process.env.NEXTAUTH_URL;
+const isProduction = process.env.NODE_ENV === 'production';
+const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build' || process.env.npm_lifecycle_event === 'build';
+
+const resolveAuthBaseURL = () => {
+    const explicitURL =
+        process.env.BETTER_AUTH_URL ||
+        process.env.NEXT_PUBLIC_BETTER_AUTH_URL ||
+        process.env.AUTH_URL ||
+        process.env.NEXTAUTH_URL;
+
+    if (explicitURL) {
+        return explicitURL;
+    }
+
+    const vercelURL = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+    if (vercelURL) {
+        return vercelURL.startsWith('http') ? vercelURL : `https://${vercelURL}`;
+    }
+
+    const allowedHosts = process.env.BETTER_AUTH_ALLOWED_HOSTS?.split(',')
+        .map((host) => host.trim())
+        .filter(Boolean);
+    if (allowedHosts?.length) {
+        return {
+            allowedHosts,
+            protocol: 'auto' as const
+        };
+    }
+
+    if (!isProduction || isBuildPhase) {
+        return {
+            allowedHosts: ['localhost', 'localhost:*', '127.0.0.1', '127.0.0.1:*', '0.0.0.0', '0.0.0.0:*'],
+            protocol: 'http' as const
+        };
+    }
+
+    throw new Error('BETTER_AUTH_URL, NEXTAUTH_URL, VERCEL_URL, or BETTER_AUTH_ALLOWED_HOSTS must be set in production.');
+};
+
+const resolveAuthSecret = (): string => {
+    const secret = process.env.BETTER_AUTH_SECRET || process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+
+    if (secret && secret.length >= 32) {
+        return secret;
+    }
+
+    if (isProduction && !isBuildPhase) {
+        throw new Error('BETTER_AUTH_SECRET must be set to a random value with at least 32 characters in production.');
+    }
+
+    return 'inkraft-local-dev-auth-secret-at-least-32-chars';
+};
+
+const authBaseURL = resolveAuthBaseURL();
+const authSecret = resolveAuthSecret();
 
 export const betterAuthInstance = betterAuth({
     ...(authBaseURL ? { baseURL: authBaseURL } : {}),
-    secret: process.env.BETTER_AUTH_SECRET || process.env.AUTH_SECRET,
+    secret: authSecret,
     socialProviders: {
         github: {
             clientId: githubClientId,
@@ -117,6 +167,7 @@ interface SignInOptions {
 
 export const signIn = async (provider: SignInProvider, options: SignInOptions = {}) => {
     const result = await betterAuthInstance.api.signInSocial({
+        headers: await headers(),
         body: {
             provider,
             callbackURL: options.callbackUrl ?? '/'
