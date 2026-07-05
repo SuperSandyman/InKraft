@@ -15,7 +15,7 @@ export const UserInfoClient: React.FC<UserInfoClientProps> = ({ user }) => {
     return (
         <div
             className={
-                state === 'collapsed' ? 'flex flex-col items-center px-0 py-2' : 'flex items-center gap-3 px-2 py-3'
+                state === 'collapsed' ? 'flex flex-col items-center px-0 py-0' : 'flex items-center gap-3 px-1 py-1'
             }
         >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -25,23 +25,22 @@ export const UserInfoClient: React.FC<UserInfoClientProps> = ({ user }) => {
                 style={
                     state === 'collapsed'
                         ? {
-                              width: '2.25rem',
-                              height: '2.25rem',
-                              borderRadius: '0.5rem',
+                              width: '2.5rem',
+                              height: '2.5rem',
+                              borderRadius: '9999px',
                               objectFit: 'cover',
-                              backgroundColor: 'var(--tw-bg-opacity)',
                               aspectRatio: '1 / 1'
                           }
                         : undefined
                 }
                 className={
                     state === 'collapsed'
-                        ? 'rounded-lg object-cover bg-gray-200 dark:bg-gray-700 aspect-square'
-                        : 'w-9 h-9 rounded-lg object-cover bg-gray-200 dark:bg-gray-700'
+                        ? 'rounded-full object-cover bg-blue-100 ring-2 ring-blue-200/80 aspect-square'
+                        : 'w-11 h-11 rounded-full object-cover bg-blue-100 ring-2 ring-blue-200/80'
                 }
             />
             {state !== 'collapsed' && (
-                <span className="font-medium text-base text-gray-900 dark:text-gray-100 truncate">
+                <span className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate">
                     {user?.name || 'User'}
                 </span>
             )}

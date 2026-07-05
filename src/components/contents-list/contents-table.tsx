@@ -51,17 +51,17 @@ const ContentsTable = ({ contents }: ContentsTableProps) => {
     };
 
     return (
-        <div className="overflow-x-auto bg-background border border-muted rounded-xl px-4 py-6">
+        <div className="overflow-x-auto rounded-lg border border-border/70 bg-white px-4 py-5 shadow-[0_12px_32px_rgba(27,42,71,0.07)]">
             <table className="w-full">
                 <thead>
-                    <tr className="border-b">
-                        <th className="text-left py-3 px-4 font-medium whitespace-nowrap">操作</th>
-                        <th className="text-left py-3 px-4 font-medium whitespace-nowrap">タイトル</th>
-                        <th className="text-left py-3 px-4 font-medium whitespace-nowrap">ステータス</th>
-                        <th className="text-left py-3 px-4 font-medium whitespace-nowrap">カテゴリ</th>
-                        <th className="text-left py-3 px-4 font-medium whitespace-nowrap">著者</th>
-                        <th className="text-left py-3 px-4 font-medium whitespace-nowrap">公開日</th>
-                        <th className="text-left py-3 px-4 font-medium whitespace-nowrap">更新日</th>
+                    <tr className="border-b border-slate-100 bg-slate-50">
+                        <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 whitespace-nowrap">操作</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 whitespace-nowrap">タイトル</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 whitespace-nowrap">ステータス</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 whitespace-nowrap">カテゴリ</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 whitespace-nowrap">著者</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 whitespace-nowrap">公開日</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 whitespace-nowrap">更新日</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -76,11 +76,11 @@ const ContentsTable = ({ contents }: ContentsTableProps) => {
                         const updatedAt = getStringField(content, 'updateDate') || publishedAt;
 
                         return (
-                            <tr key={content.slug} className="border-b hover:bg-muted/50">
+                            <tr key={content.slug} className="border-b border-slate-100 hover:bg-slate-50/80">
                                 <td className="py-3 px-4 whitespace-nowrap">
                                     <div className="flex gap-2">
                                         <a href={`/contents/${content.slug}/edit`}>
-                                            <Button variant="outline" size="sm">
+                                            <Button variant="outline" size="sm" className="rounded-full">
                                                 編集
                                             </Button>
                                         </a>
@@ -89,7 +89,7 @@ const ContentsTable = ({ contents }: ContentsTableProps) => {
                                             size="sm"
                                             disabled={isPending}
                                             onClick={() => handleDelete(content.slug, content.directory)}
-                                            className="border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                                            className="rounded-full border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
                                         >
                                             削除
                                         </Button>
@@ -97,8 +97,8 @@ const ContentsTable = ({ contents }: ContentsTableProps) => {
                                 </td>
                                 <td className="py-3 px-4 whitespace-nowrap">
                                     <div>
-                                        <div className="font-medium line-clamp-1">{title}</div>
-                                        <div className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                                        <div className="font-bold text-slate-800 line-clamp-1">{title}</div>
+                                        <div className="mt-1 text-sm text-muted-foreground line-clamp-2">
                                             <span className="block sm:hidden">
                                                 {content.excerpt && content.excerpt.length > 10
                                                     ? `${content.excerpt.slice(0, 30)}…`

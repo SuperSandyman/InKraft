@@ -8,10 +8,11 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '
 
 interface ChartPieDonutTextProps {
     data: { label: string; count: number; color: string }[];
+    totalCount?: number;
 }
 
-export const ChartPieDonutText: React.FC<ChartPieDonutTextProps> = ({ data }) => {
-    const total = React.useMemo(() => data.reduce((acc, cur) => acc + cur.count, 0), [data]);
+export const ChartPieDonutText: React.FC<ChartPieDonutTextProps> = ({ data, totalCount }) => {
+    const total = React.useMemo(() => totalCount ?? data.reduce((acc, cur) => acc + cur.count, 0), [data, totalCount]);
     const chartConfig = React.useMemo(() => {
         const conf: ChartConfig = {};
         data.forEach((d) => {
@@ -21,15 +22,15 @@ export const ChartPieDonutText: React.FC<ChartPieDonutTextProps> = ({ data }) =>
     }, [data]);
 
     return (
-        <Card className="sm:h-full h-auto flex flex-col w-full min-w-0">
-            <CardHeader>
-                <CardTitle className="text-lg font-semibold">コンテンツ分布</CardTitle>
+        <Card className="min-h-[180px] w-full min-w-0 sm:min-h-[210px]">
+            <CardHeader className="items-center px-4 text-center">
+                <CardTitle className="text-base font-bold">総コンテンツ</CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 flex items-center justify-center">
+            <CardContent className="flex flex-1 flex-col items-center justify-center gap-2 px-4">
                 <div className="flex-none flex items-center justify-center">
                     <ChartContainer
                         config={chartConfig}
-                        className="aspect-square w-full min-w-[240px] max-w-[240px] min-h-[240px] max-h-[240px] flex items-center justify-center"
+                        className="aspect-square w-full min-w-[132px] max-w-[132px] min-h-[132px] max-h-[132px] flex items-center justify-center"
                     >
                         <PieChart>
                             <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
@@ -37,10 +38,10 @@ export const ChartPieDonutText: React.FC<ChartPieDonutTextProps> = ({ data }) =>
                                 data={data}
                                 dataKey="count"
                                 nameKey="label"
-                                innerRadius={52}
-                                outerRadius={85}
+                                innerRadius={38}
+                                outerRadius={58}
                                 cx="50%"
-                                cy="42%"
+                                cy="50%"
                                 strokeWidth={5}
                                 startAngle={90}
                                 endAngle={-270}
@@ -63,16 +64,16 @@ export const ChartPieDonutText: React.FC<ChartPieDonutTextProps> = ({ data }) =>
                                                     <tspan
                                                         x={viewBox.cx}
                                                         y={cy - 4}
-                                                        className="fill-foreground text-xl font-bold"
+                                                        className="fill-foreground text-2xl font-extrabold"
                                                     >
                                                         {total.toLocaleString()}
                                                     </tspan>
                                                     <tspan
                                                         x={viewBox.cx}
-                                                        y={cy + 12}
-                                                        className="fill-muted-foreground text-xs"
+                                                        y={cy + 14}
+                                                        className="fill-muted-foreground text-xs font-bold"
                                                     >
-                                                        Articles
+                                                        記事
                                                     </tspan>
                                                 </text>
                                             );
@@ -83,6 +84,9 @@ export const ChartPieDonutText: React.FC<ChartPieDonutTextProps> = ({ data }) =>
                             </Pie>
                         </PieChart>
                     </ChartContainer>
+                </div>
+                <div className="text-sm font-bold text-muted-foreground">
+                    今月 <span className="text-cyan-600">+4 ↑</span>
                 </div>
             </CardContent>
         </Card>

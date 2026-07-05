@@ -3,10 +3,11 @@ import { fetchAllContentsFromGitHub, Content } from '@/lib/content';
 import ContentsTable from '@/components/contents-list/contents-table';
 import Pagination from '@/components/contents-list/pagination';
 import Breadcrumbs from '@/components/common/breadcrumbs';
-import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import NewArticleButton from '@/components/contents-list/new-article-button';
 import { getCmsConfig } from '@/lib/content';
+import { Input } from '@/components/ui/input';
+import { Bell, Search, UserRound } from 'lucide-react';
 
 interface ContentsPageProps {
     searchParams: Promise<{
@@ -57,10 +58,9 @@ export default async function ContentsPage({ searchParams }: ContentsPageProps) 
 
     return (
         <>
-            <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-                <div className="flex items-center gap-2 px-4">
-                    <SidebarTrigger className="-ml-1" />
-                    <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+            <header className="sticky top-0 z-20 flex h-20 shrink-0 items-center justify-between gap-4 border-b border-border/70 bg-white/88 px-4 backdrop-blur-md transition-[width,height] ease-linear md:px-8 group-has-data-[collapsible=icon]/sidebar-wrapper:h-16">
+                <div className="flex min-w-0 items-center gap-3">
+                    <SidebarTrigger className="size-9 rounded-lg md:hidden" />
                     <Breadcrumbs
                         items={[
                             { label: 'ダッシュボード', href: '/' },
@@ -68,14 +68,29 @@ export default async function ContentsPage({ searchParams }: ContentsPageProps) 
                         ]}
                     />
                 </div>
+                <div className="flex items-center gap-3">
+                    <div className="relative hidden w-[260px] md:block">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input className="h-10 pl-9 text-sm" placeholder="検索..." />
+                    </div>
+                    <button
+                        type="button"
+                        aria-label="通知"
+                        className="flex size-10 items-center justify-center rounded-full text-slate-700 transition-colors hover:bg-accent hover:text-primary"
+                    >
+                        <Bell className="size-5" />
+                    </button>
+                    <div className="flex size-10 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                        <UserRound className="size-5" />
+                    </div>
+                </div>
             </header>
-            <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+            <div className="flex flex-1 flex-col gap-5 p-4 md:p-8">
                 <div className="space-y-6">
-                    {/* ヘッダー部分 */}
-                    <div className="flex items-center justify-between px-2 md:px-4 mt-8 mb-6">
+                    <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-2xl font-bold tracking-tight mb-2">記事一覧</h1>
-                            <p className="text-base text-muted-foreground">
+                            <h1 className="mb-2 text-2xl font-extrabold tracking-normal text-slate-950">記事一覧</h1>
+                            <p className="text-sm font-bold text-muted-foreground">
                                 {status === 'all' && `全ての記事 (${totalCount}件)`}
                                 {status === 'published' && `公開中の記事 (${totalCount}件)`}
                                 {status === 'draft' && `下書きの記事 (${totalCount}件)`}
@@ -84,34 +99,33 @@ export default async function ContentsPage({ searchParams }: ContentsPageProps) 
                         <NewArticleButton />
                     </div>
 
-                    {/* フィルタボタン */}
-                    <div className="flex gap-2 px-2 md:px-4 mb-6">
+                    <div className="flex gap-2">
                         <Link
                             href="/contents"
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                            className={`rounded-full px-4 py-2 text-sm font-bold transition-colors ${
                                 status === 'all'
                                     ? 'bg-primary text-primary-foreground'
-                                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                                    : 'bg-white text-slate-600 ring-1 ring-border hover:bg-accent hover:text-primary'
                             }`}
                         >
                             全て
                         </Link>
                         <Link
                             href="/contents?status=published"
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                            className={`rounded-full px-4 py-2 text-sm font-bold transition-colors ${
                                 status === 'published'
                                     ? 'bg-primary text-primary-foreground'
-                                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                                    : 'bg-white text-slate-600 ring-1 ring-border hover:bg-accent hover:text-primary'
                             }`}
                         >
                             公開中
                         </Link>
                         <Link
                             href="/contents?status=draft"
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                            className={`rounded-full px-4 py-2 text-sm font-bold transition-colors ${
                                 status === 'draft'
                                     ? 'bg-primary text-primary-foreground'
-                                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                                    : 'bg-white text-slate-600 ring-1 ring-border hover:bg-accent hover:text-primary'
                             }`}
                         >
                             下書き

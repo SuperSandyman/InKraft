@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Separator } from '@/components/ui/separator';
 // パンくずは共通コンポーネントを使用
 import Breadcrumbs from '@/components/common/breadcrumbs';
 import { useNavigationGuard } from '@/hooks/use-navigation-guard';
@@ -160,10 +159,9 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
 
     return (
         <>
-            <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-                <div className="flex items-center gap-2 px-4">
-                    <SidebarTrigger className="-ml-1" />
-                    <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+            <header className="sticky top-0 z-20 flex h-20 shrink-0 items-center gap-3 border-b border-border/70 bg-white/88 px-4 backdrop-blur-md transition-[width,height] ease-linear md:px-8 group-has-data-[collapsible=icon]/sidebar-wrapper:h-16">
+                <div className="flex min-w-0 items-center gap-3">
+                    <SidebarTrigger className="size-9 rounded-lg md:hidden" />
                     <Breadcrumbs
                         items={[
                             { label: 'ダッシュボード', href: '/' },
@@ -173,16 +171,16 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
                     />
                 </div>
             </header>
-            <div className="flex flex-1 flex-col gap-6 p-4 pt-0">
+            <div className="flex flex-1 flex-col gap-6 p-4 md:p-8">
                 <div className="space-y-6">
-                    <div className="px-2 md:px-4 mt-8 mb-6">
-                        <h1 className="text-2xl font-bold tracking-tight mb-2">新規記事作成</h1>
-                        <p className="text-base text-muted-foreground">
+                    <div>
+                        <h1 className="mb-2 text-2xl font-extrabold tracking-normal text-slate-950">新規記事作成</h1>
+                        <p className="text-sm font-bold text-muted-foreground">
                             記事の内容とメタデータを入力して新しい記事を作成します。
                         </p>
                     </div>
                     {/* PC: メタデータ右/ モバイル: メタデータ上 */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-2 md:px-4">
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                         {/* モバイル時: メタデータ・AI生成を上に表示 */}
                         <div className="lg:hidden space-y-4 order-1">
                             <Card>

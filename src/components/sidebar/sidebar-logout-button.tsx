@@ -9,8 +9,8 @@ const SidebarLogoutButton: React.FC = () => {
             type="submit"
             className={
                 state === 'collapsed'
-                    ? 'flex items-center justify-center w-full px-0 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors'
-                    : 'flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors'
+                    ? 'flex h-12 items-center justify-center w-full px-0 rounded-lg text-sm font-bold text-gray-500 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-800 transition-colors'
+                    : 'flex h-12 items-center gap-2 w-full px-3 rounded-lg text-sm font-bold text-gray-500 hover:bg-blue-50 hover:text-blue-700 dark:text-gray-200 dark:hover:bg-gray-800 transition-colors'
             }
         >
             <LogOut className="w-4 h-4" />

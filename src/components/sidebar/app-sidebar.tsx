@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { BookOpen } from 'lucide-react';
+import { BarChart3, BookOpen, Home, Settings, Users } from 'lucide-react';
 import { NavMain } from '@/components/sidebar/nav-main';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail } from '@/components/ui/sidebar';
 import { logoutAction } from '@/app/actions/logout';
@@ -12,10 +12,15 @@ import { SidebarLogoutButton } from './sidebar-logout-button';
 const data = {
     navMain: [
         {
+            title: 'ホーム',
+            url: '/',
+            icon: Home,
+            isActive: true
+        },
+        {
             title: '記事一覧',
             url: '/contents',
             icon: BookOpen,
-            isActive: true,
             items: [
                 {
                     title: '公開中',
@@ -30,30 +35,22 @@ const data = {
                     url: '/contents/new'
                 }
             ]
+        },
+        {
+            title: 'コミュニティ',
+            url: '/',
+            icon: Users
+        },
+        {
+            title: '分析',
+            url: '/',
+            icon: BarChart3
+        },
+        {
+            title: '設定',
+            url: '/',
+            icon: Settings
         }
-        // {
-        //     title: '設定',
-        //     url: '/settings',
-        //     icon: Settings2,
-        //     items: [
-        //         {
-        //             title: '一般設定',
-        //             url: '/settings/general'
-        //         },
-        //         {
-        //             title: 'GitHub連携',
-        //             url: '/settings/github'
-        //         },
-        //         {
-        //             title: 'テーマ設定',
-        //             url: '/settings/theme'
-        //         },
-        //         {
-        //             title: 'ユーザー管理',
-        //             url: '/settings/users'
-        //         }
-        //     ]
-        // }
     ]
 };
 
@@ -67,13 +64,13 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 export function AppSidebar({ user, ...props }: AppSidebarProps) {
     return (
         <Sidebar collapsible="icon" {...props}>
-            <SidebarHeader>
+            <SidebarHeader className="px-3 py-5">
                 <UserInfoClient user={user} />
             </SidebarHeader>
-            <SidebarContent>
+            <SidebarContent className="px-3">
                 <NavMain items={data.navMain} />
             </SidebarContent>
-            <SidebarFooter>
+            <SidebarFooter className="px-3 py-5">
                 <form action={logoutAction} className="w-full">
                     <SidebarLogoutButton />
                 </form>
