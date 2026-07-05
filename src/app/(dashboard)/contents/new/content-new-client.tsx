@@ -103,7 +103,6 @@ const ContentNewClient = ({ schema, directories = [] }: ContentNewClientProps) =
                     slug: sanitizedSlug
                 }) as FrontmatterData & { directory?: string };
                 setInitialFormValues(initialMetaRef.current);
-                // 即座にリダイレクト（キャッシュ更新は裏で実行中）
                 router.push('/contents');
                 // キャッシュ再検証をトリガー
                 router.refresh();

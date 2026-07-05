@@ -112,7 +112,7 @@ export const triggerCmsWebhook = async (
         const filteredEndpoints = config.endpoints.filter((endpoint) => shouldProcessEvent(eventType, endpoint));
         const promises = filteredEndpoints.map(async (endpoint: WebhookEndpoint) => {
             try {
-                await fetch(endpoint.url, {
+                const response = await fetch(endpoint.url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -127,12 +127,15 @@ export const triggerCmsWebhook = async (
                         }
                     })
                 });
-            } catch {
-                // ignore error
+                if (!response.ok) {
+                    console.error(`Webhook endpoint failed: ${endpoint.name} ${response.status} ${response.statusText}`);
+                }
+            } catch (error) {
+                console.error(`Webhook endpoint error: ${endpoint.name}`, error);
             }
         });
         await Promise.allSettled(promises);
-    } catch {
-        // ignore error
+    } catch (error) {
+        console.error('Webhook発火に失敗:', error);
     }
 };

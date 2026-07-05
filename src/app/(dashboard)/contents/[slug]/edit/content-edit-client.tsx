@@ -166,7 +166,6 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo, directori
                     slug: sanitizedSlug,
                     directory: targetDirectory
                 });
-                // 即座にリダイレクト（キャッシュ更新は裏で実行中）
                 router.push('/contents');
                 // キャッシュ再検証をトリガー
                 router.refresh();

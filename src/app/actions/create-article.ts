@@ -3,9 +3,11 @@
 import matter from 'gray-matter';
 import { revalidatePath } from 'next/cache';
 
-import { getCmsConfig, updateCacheForContent } from '@/lib/content';
+import { getAllContentTypes, getCmsConfig, updateCacheForContent } from '@/lib/content';
+import { assertValidSlug, resolveArticleFile, resolveContentType, sanitizeSlug } from '@/lib/content-path';
 import { convertDatesToSchemaFormat } from '@/lib/date-format';
 import { getOctokitWithAuth } from '@/lib/github-api';
+import { requireAllowedSession } from '@/lib/server-auth';
 import { triggerCmsWebhook } from '@/lib/webhook';
 
 interface CreateArticleParams {
@@ -31,19 +33,23 @@ export const createArticle = async ({
     directory,
     frontmatter,
     content,
-    articleFile = 'index.md'
+    articleFile
 }: CreateArticleParams): Promise<{ success: boolean; error?: string }> => {
     try {
+        await requireAllowedSession();
         const config = await getCmsConfig();
         const [owner, repo] = config.targetRepository.split('/');
         const branch = config.branch || 'main';
         const octokit = await getOctokitWithAuth();
+        const contentType = resolveContentType(await getAllContentTypes(), directory);
+        const resolvedArticleFile = resolveArticleFile(contentType, articleFile);
 
         // slugをファイル名として適切な形式にサニタイズ
-        const sanitizedSlug = slug.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
-        const filePath = `${directory}/${sanitizedSlug}/${articleFile}`;
+        const sanitizedSlug = sanitizeSlug(slug);
+        assertValidSlug(sanitizedSlug);
+        const filePath = `${contentType.directory}/${sanitizedSlug}/${resolvedArticleFile}`;
 
-        const frontmatterWithDraft = applyDraftFrontmatter(frontmatter, directory, config.draftDirectory);
+        const frontmatterWithDraft = applyDraftFrontmatter(frontmatter, contentType.directory, config.draftDirectory);
 
         // 日付をスキーマ指定フォーマットに変換
         const formattedFrontmatter = await convertDatesToSchemaFormat(frontmatterWithDraft);
@@ -60,8 +66,15 @@ export const createArticle = async ({
                 ref: branch
             });
             return { success: false, error: '同名の記事が既に存在します' };
-        } catch {
-            // ファイルが存在しない場合は正常（新規作成可能）
+        } catch (error: unknown) {
+            const isNotFound =
+                typeof error === 'object' &&
+                error !== null &&
+                'status' in error &&
+                (error as { status?: number }).status === 404;
+            if (!isNotFound) {
+                throw error;
+            }
         }
 
         // 新規ファイルを作成
@@ -76,17 +89,13 @@ export const createArticle = async ({
             branch
         });
 
-        // index.json キャッシュを更新（非同期・fire-and-forget）
-        updateCacheForContent(directory, sanitizedSlug, formattedFrontmatter, content, 'create').catch((err) =>
-            console.error('キャッシュ更新に失敗（記事は保存済み）:', err)
-        );
+        await updateCacheForContent(contentType.directory, sanitizedSlug, formattedFrontmatter, content, 'create');
 
-        // Webhookを発火（非同期・fire-and-forget）
-        triggerCmsWebhook('create', {
+        await triggerCmsWebhook('create', {
             slug: sanitizedSlug,
-            directory,
+            directory: contentType.directory,
             repository: config.targetRepository
-        }).catch((err) => console.error('Webhook発火に失敗（記事は保存済み）:', err));
+        });
 
         // 記事一覧の再検証をトリガー
         revalidatePath('/contents');
