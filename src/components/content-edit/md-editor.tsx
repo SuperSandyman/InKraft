@@ -146,7 +146,7 @@ const MdEditor = ({
     ];
 
     return (
-        <div className="w-full relative">
+        <div className="relative w-full min-w-0 overflow-hidden">
             {/* 画像アップロードツールバー（モバイルで折り返し防止 & 横スクロール許可） */}
             <div className="flex items-center gap-2 p-2 border-b bg-muted/30 overflow-x-auto whitespace-nowrap">
                 <button
@@ -200,7 +200,7 @@ const MdEditor = ({
                     <span className="ml-2">{showPreview ? 'エディタ' : 'プレビュー'}</span>
                 </button>
 
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                <span className="hidden text-xs text-muted-foreground whitespace-nowrap sm:inline">
                     画像をドラッグ＆ドロップまたはクリックしてアップロード
                 </span>
                 <span className="ml-auto text-xs text-muted-foreground whitespace-nowrap">
@@ -209,9 +209,9 @@ const MdEditor = ({
             </div>
 
             {/* エディタ + プレビュー（レスポンシブ: PC=左右分割、モバイル=プレビューで上書き） */}
-            <div className="relative flex flex-col md:flex-row gap-2">
+            <div className="relative flex min-w-0 flex-col gap-2 md:flex-row">
                 {/* CodeMirror エディタ（モバイルでプレビュー時は隠す） */}
-                <div className={`${showPreview ? 'hidden md:block md:w-1/2' : 'w-full'}`}>
+                <div className={`min-w-0 ${showPreview ? 'hidden md:block md:w-1/2' : 'w-full'}`}>
                     <CodeMirror
                         value={value}
                         height={`${height}px`}
@@ -240,7 +240,7 @@ const MdEditor = ({
                 {/* プレビュー表示（PC: 右半分、モバイル: エディタを上書き表示） */}
                 {showPreview && (
                     <div
-                        className="w-full md:w-1/2 border-l overflow-auto bg-background"
+                        className="w-full min-w-0 overflow-auto border-l bg-background md:w-1/2"
                         style={{ height: `${height}px` }}
                         data-color-mode="light"
                     >
@@ -248,7 +248,7 @@ const MdEditor = ({
                             source={value}
                             className="markdown-preview-custom"
                             style={{
-                                padding: '1.5rem'
+                                padding: '1rem'
                             }}
                         />
                     </div>

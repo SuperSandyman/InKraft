@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useSidebar } from '@/components/ui/sidebar';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface UserInfoClientProps {
     user?: {
@@ -11,39 +12,42 @@ interface UserInfoClientProps {
 }
 
 export const UserInfoClient: React.FC<UserInfoClientProps> = ({ user }) => {
-    const { state } = useSidebar();
-    return (
+    const { isMobile } = useSidebar();
+    const name = user?.name || 'User';
+    const avatar = (
         <div
             className={
-                state === 'collapsed' ? 'flex flex-col items-center px-0 py-0' : 'flex items-center gap-3 px-1 py-1'
+                isMobile ? 'flex items-center gap-3 px-1 py-1' : 'flex size-12 items-center justify-center'
             }
         >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
                 src={user?.image || '/user-solid.svg'}
-                alt={user?.name || 'User'}
-                style={
-                    state === 'collapsed'
-                        ? {
-                              width: '2.5rem',
-                              height: '2.5rem',
-                              borderRadius: '9999px',
-                              objectFit: 'cover',
-                              aspectRatio: '1 / 1'
-                          }
-                        : undefined
-                }
+                alt={name}
                 className={
-                    state === 'collapsed'
-                        ? 'rounded-full object-cover bg-blue-100 ring-2 ring-blue-200/80 aspect-square'
-                        : 'w-11 h-11 rounded-full object-cover bg-blue-100 ring-2 ring-blue-200/80'
+                    isMobile
+                        ? 'size-11 rounded-full object-cover bg-blue-100 ring-2 ring-blue-200/80'
+                        : 'size-10 rounded-full object-cover bg-blue-100 ring-2 ring-blue-200/80'
                 }
             />
-            {state !== 'collapsed' && (
+            {isMobile && (
                 <span className="font-bold text-sm text-gray-900 dark:text-gray-100 truncate">
-                    {user?.name || 'User'}
+                    {name}
                 </span>
             )}
         </div>
+    );
+
+    if (isMobile) {
+        return avatar;
+    }
+
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>{avatar}</TooltipTrigger>
+            <TooltipContent side="right" align="center" sideOffset={10}>
+                {name}
+            </TooltipContent>
+        </Tooltip>
     );
 };

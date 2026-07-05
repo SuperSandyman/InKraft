@@ -12,6 +12,7 @@ import { updateArticle } from '@/app/actions/update-article';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import Breadcrumbs from '@/components/common/breadcrumbs';
 import { useNavigationGuard } from '@/hooks/use-navigation-guard';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface GithubInfo {
     owner: string;
@@ -43,6 +44,7 @@ const normalizeMeta = (meta: FrontmatterData & { directory?: string }) => {
 
 const ContentEditClient = ({ schema, article, fullContent, githubInfo, directories = [] }: ContentEditClientProps) => {
     const router = useRouter();
+    const isMobile = useIsMobile();
     const initialContentValue = useMemo(() => {
         if (fullContent) {
             return fullContent;
@@ -209,6 +211,16 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo, directori
         typeof formMeta.directory === 'string' && formMeta.directory !== '' ? formMeta.directory : article.directory;
     const currentSlug = typeof formMeta.slug === 'string' && formMeta.slug !== '' ? formMeta.slug : article.slug;
     const currentTitle = typeof formMeta.title === 'string' ? formMeta.title : '';
+    const metadataForm = (
+        <DynamicContentForm
+            schema={schema}
+            onSubmit={handleFormSubmit}
+            isSubmitting={isSubmitting}
+            directories={directories}
+            initialValues={initialMeta}
+            onChange={handleFormMetaChange}
+        />
+    );
 
     return (
         <>
@@ -232,29 +244,34 @@ const ContentEditClient = ({ schema, article, fullContent, githubInfo, directori
                         <p className="text-sm font-bold text-muted-foreground">記事の内容とメタデータを編集します。</p>
                     </div>
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                        <div className="lg:col-span-2 space-y-4">
-                            <div className="rounded-lg border border-border/70 bg-white p-4 shadow-[0_12px_32px_rgba(27,42,71,0.07)]">
-                                <h2 className="mb-4 text-lg font-bold">記事内容</h2>
+                        {isMobile && (
+                        <div className="lg:hidden">
+                            <details className="rounded-lg border border-border/70 bg-white shadow-[0_12px_32px_rgba(27,42,71,0.07)]">
+                                <summary className="cursor-pointer px-4 py-3 text-sm font-extrabold text-slate-900">
+                                    記事メタデータ
+                                </summary>
+                                <div className="border-t border-border/60 p-3">{metadataForm}</div>
+                            </details>
+                        </div>
+                        )}
+                        <div className="min-w-0 space-y-4 lg:col-span-2">
+                            <div className="-mx-2 rounded-lg border border-border/70 bg-white p-2 shadow-[0_12px_32px_rgba(27,42,71,0.07)] sm:mx-0 sm:p-4">
+                                <h2 className="mb-3 px-1 text-lg font-bold sm:px-0">記事内容</h2>
                                 <MdEditor
                                     value={content}
                                     onChange={handleContentChange}
-                                    height={700}
+                                    height={640}
                                     directory={currentDirectory}
                                     slug={currentSlug}
                                     githubInfo={githubInfo}
                                 />
                             </div>
                         </div>
-                        <div className="lg:col-span-1">
-                            <DynamicContentForm
-                                schema={schema}
-                                onSubmit={handleFormSubmit}
-                                isSubmitting={isSubmitting}
-                                directories={directories}
-                                initialValues={initialMeta}
-                                onChange={handleFormMetaChange}
-                            />
+                        {!isMobile && (
+                        <div className="hidden lg:col-span-1 lg:block">
+                            {metadataForm}
                         </div>
+                        )}
                     </div>
                 </div>
             </div>

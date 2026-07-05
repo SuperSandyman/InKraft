@@ -22,15 +22,15 @@ export const ChartPieDonutText: React.FC<ChartPieDonutTextProps> = ({ data, tota
     }, [data]);
 
     return (
-        <Card className="min-h-[180px] w-full min-w-0 sm:min-h-[210px]">
-            <CardHeader className="items-center px-4 text-center">
+        <Card className="min-h-0 w-full min-w-0 py-4 sm:min-h-[210px]">
+            <CardHeader className="items-center px-4 pb-0 text-center">
                 <CardTitle className="text-base font-bold">総コンテンツ</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-1 flex-col items-center justify-center gap-2 px-4">
-                <div className="flex-none flex items-center justify-center">
+            <CardContent className="flex flex-row items-center justify-center gap-4 px-4 sm:flex-1 sm:flex-col sm:gap-2">
+                <div className="flex flex-none items-center justify-center">
                     <ChartContainer
                         config={chartConfig}
-                        className="aspect-square w-full min-w-[132px] max-w-[132px] min-h-[132px] max-h-[132px] flex items-center justify-center"
+                        className="flex aspect-square min-h-[104px] max-h-[112px] min-w-[104px] max-w-[112px] items-center justify-center sm:min-h-[132px] sm:max-h-[132px] sm:min-w-[132px] sm:max-w-[132px]"
                     >
                         <PieChart>
                             <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
@@ -85,8 +85,9 @@ export const ChartPieDonutText: React.FC<ChartPieDonutTextProps> = ({ data, tota
                         </PieChart>
                     </ChartContainer>
                 </div>
-                <div className="text-sm font-bold text-muted-foreground">
-                    今月 <span className="text-cyan-600">+4 ↑</span>
+                <div className="text-left text-sm font-bold text-muted-foreground sm:text-center">
+                    <span className="block text-xs">現在の総数</span>
+                    <span className="text-cyan-600">{data.length.toLocaleString()} 種類</span>
                 </div>
             </CardContent>
         </Card>

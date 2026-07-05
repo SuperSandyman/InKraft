@@ -114,7 +114,6 @@ const GitHubHeatmap: React.FC<GitHubHeatmapProps> = ({ articles }) => {
                         i
                     </span>
                 </div>
-                <span className="text-xs font-bold text-muted-foreground">GitHub風のグラフ</span>
             </CardHeader>
             <CardContent className="flex min-h-0 min-w-0 flex-1 flex-col justify-center gap-4 px-4 sm:px-5">
                 <div className="min-w-0 overflow-x-auto" aria-label="GitHub style activity heatmap">

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Link from 'next/link';
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Content } from '@/lib/content';
@@ -53,7 +54,12 @@ const RecentArticles: React.FC<RecentArticlesProps> = ({ articles }) => {
                                 return (
                                     <tr key={a.slug} className="border-b border-slate-100 last:border-0 dark:border-gray-700">
                                         <td className="max-w-[420px] px-4 py-3 whitespace-nowrap font-bold text-slate-800 dark:text-gray-100">
-                                            {title}
+                                            <Link
+                                                href={`/contents/${a.slug}/edit`}
+                                                className="block truncate transition-colors hover:text-blue-600"
+                                            >
+                                                {title}
+                                            </Link>
                                         </td>
                                         <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-200">
                                             <div className="flex gap-2">

@@ -7,35 +7,31 @@ import RecentArticles from '@/components/dashboard/recent-articles';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Bell, Bookmark, FileText, Search, UserRound } from 'lucide-react';
+import { Bell, Search, TrendingUp, UserRound } from 'lucide-react';
 
-interface DashboardMetricProps {
-    title: string;
-    value: number;
-    unit: string;
-    icon: React.ReactNode;
-    tone: 'blue' | 'cyan';
-}
-
-const DashboardMetric = ({ title, value, unit, icon, tone }: DashboardMetricProps) => {
-    const toneClass =
-        tone === 'blue'
-            ? 'bg-blue-100 text-blue-700 ring-blue-200/70'
-            : 'bg-cyan-100 text-cyan-700 ring-cyan-200/70';
-
+const DashboardInsight = ({ monthlyCount, activeDays }: { monthlyCount: number; activeDays: number }) => {
     return (
-        <Card className="min-h-[180px] justify-between py-5 sm:min-h-[210px]">
-            <CardHeader className="items-center gap-4 px-4 text-center">
-                <CardTitle className="text-base font-bold">{title}</CardTitle>
-                <div className={`flex size-14 items-center justify-center rounded-lg ring-1 ${toneClass}`}>{icon}</div>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center gap-3 px-4 text-center">
-                <div>
-                    <div className="text-4xl font-extrabold leading-none text-slate-950">{value.toLocaleString()}</div>
-                    <div className="mt-2 text-sm font-bold text-muted-foreground">{unit}</div>
+        <Card className="min-h-0 py-4 sm:min-h-[210px]">
+            <CardHeader className="flex-row items-center justify-between gap-3 px-4 pb-0">
+                <CardTitle className="text-base font-bold">更新状況</CardTitle>
+                <div className="flex size-10 items-center justify-center rounded-lg bg-cyan-50 text-cyan-700 ring-1 ring-cyan-100">
+                    <TrendingUp className="size-5" />
                 </div>
-                <a href="/contents" className="text-sm font-bold text-blue-600 hover:text-blue-700">
-                    一覧を見る →
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-3 px-4 sm:flex sm:flex-1 sm:flex-col sm:justify-center">
+                <div className="rounded-lg bg-slate-50 px-3 py-3">
+                    <div className="text-xs font-bold text-muted-foreground">今月の更新</div>
+                    <div className="mt-1 text-2xl font-extrabold text-slate-950">{monthlyCount}</div>
+                </div>
+                <div className="rounded-lg bg-blue-50 px-3 py-3">
+                    <div className="text-xs font-bold text-blue-500">稼働日数</div>
+                    <div className="mt-1 text-2xl font-extrabold text-blue-700">{activeDays}</div>
+                </div>
+                <a
+                    href="/contents/new"
+                    className="col-span-2 rounded-lg bg-primary px-4 py-3 text-center text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                    新規作成
                 </a>
             </CardContent>
         </Card>
@@ -52,9 +48,13 @@ export default async function Page() {
         .slice(0, 5);
 
     const totalCount = chartData.reduce((sum, item) => sum + item.count, 0);
-    const postsCount = chartData.find((item) => item.label.toLowerCase() === 'posts')?.count ?? chartData[0]?.count ?? 0;
-    const scrapsCount =
-        chartData.find((item) => item.label.toLowerCase() === 'scraps')?.count ?? chartData[1]?.count ?? 0;
+    const now = new Date();
+    const monthlyCount = allArticles.filter((article) => {
+        if (typeof article.date !== 'string') return false;
+        const date = new Date(article.date);
+        return !Number.isNaN(date.getTime()) && date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+    }).length;
+    const activeDays = new Set(allArticles.filter((article) => typeof article.date === 'string').map((article) => article.date as string)).size;
 
     return (
         <>
@@ -81,25 +81,12 @@ export default async function Page() {
                 </div>
             </header>
             <div className="flex flex-1 flex-col gap-5 p-4 md:p-8">
-                <div className="grid auto-rows-min gap-4 lg:grid-cols-3 xl:grid-cols-[minmax(0,1.9fr)_minmax(150px,0.5fr)_minmax(150px,0.5fr)_minmax(170px,0.58fr)]">
-                    <div className="lg:col-span-3 xl:col-span-1">
+                <div className="grid auto-rows-min gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(220px,0.55fr)_minmax(220px,0.55fr)]">
+                    <div className="lg:row-span-1">
                         <GitHubHeatmap articles={allArticles} />
                     </div>
-                    <DashboardMetric
-                        title="Posts"
-                        value={postsCount}
-                        unit="記事"
-                        tone="blue"
-                        icon={<FileText className="size-7" />}
-                    />
-                    <DashboardMetric
-                        title="Scraps"
-                        value={scrapsCount}
-                        unit="記事"
-                        tone="cyan"
-                        icon={<Bookmark className="size-7" />}
-                    />
                     <ChartPieDonutText data={chartData} totalCount={totalCount} />
+                    <DashboardInsight monthlyCount={monthlyCount} activeDays={activeDays} />
                 </div>
                 <RecentArticles articles={recentArticles} />
             </div>

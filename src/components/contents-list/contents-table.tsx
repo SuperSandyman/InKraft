@@ -4,6 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Content } from '@/lib/content';
 import { deleteArticle } from '@/app/actions/delete-article';
+import { Trash2 } from 'lucide-react';
+import Link from 'next/link';
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -51,91 +53,80 @@ const ContentsTable = ({ contents }: ContentsTableProps) => {
     };
 
     return (
-        <div className="overflow-x-auto rounded-lg border border-border/70 bg-white px-4 py-5 shadow-[0_12px_32px_rgba(27,42,71,0.07)]">
-            <table className="w-full">
-                <thead>
-                    <tr className="border-b border-slate-100 bg-slate-50">
-                        <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 whitespace-nowrap">操作</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 whitespace-nowrap">タイトル</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 whitespace-nowrap">ステータス</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 whitespace-nowrap">カテゴリ</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 whitespace-nowrap">著者</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 whitespace-nowrap">公開日</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-slate-500 whitespace-nowrap">更新日</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {contents.map((content) => {
-                        const tags = getArrayField(content, 'tags');
-                        // isDraftプロパティ優先で判定
-                        const status: 'published' | 'draft' = content.isDraft ? 'draft' : 'published';
-                        const title = getStringField(content, 'title');
-                        const author = getStringField(content, 'author');
-                        const categories = getArrayField(content, 'categories').join(', ');
-                        const publishedAt = getStringField(content, 'date');
-                        const updatedAt = getStringField(content, 'updateDate') || publishedAt;
+        <div className="rounded-lg border border-border/70 bg-white p-3 shadow-[0_12px_32px_rgba(27,42,71,0.07)] sm:p-4">
+            <div className="space-y-2">
+                {contents.map((content) => {
+                    const tags = getArrayField(content, 'tags');
+                    const status: 'published' | 'draft' = content.isDraft ? 'draft' : 'published';
+                    const title = getStringField(content, 'title') || content.slug;
+                    const author = getStringField(content, 'author');
+                    const categories = getArrayField(content, 'categories');
+                    const publishedAt = getStringField(content, 'date');
+                    const updatedAt = getStringField(content, 'updateDate') || publishedAt;
+                    const excerpt = content.excerpt || '';
 
-                        return (
-                            <tr key={content.slug} className="border-b border-slate-100 hover:bg-slate-50/80">
-                                <td className="py-3 px-4 whitespace-nowrap">
-                                    <div className="flex gap-2">
-                                        <a href={`/contents/${content.slug}/edit`}>
-                                            <Button variant="outline" size="sm" className="rounded-full">
-                                                編集
-                                            </Button>
-                                        </a>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            disabled={isPending}
-                                            onClick={() => handleDelete(content.slug, content.directory)}
-                                            className="rounded-full border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
-                                        >
-                                            削除
-                                        </Button>
-                                    </div>
-                                </td>
-                                <td className="py-3 px-4 whitespace-nowrap">
-                                    <div>
-                                        <div className="font-bold text-slate-800 line-clamp-1">{title}</div>
-                                        <div className="mt-1 text-sm text-muted-foreground line-clamp-2">
-                                            <span className="block sm:hidden">
-                                                {content.excerpt && content.excerpt.length > 10
-                                                    ? `${content.excerpt.slice(0, 30)}…`
-                                                    : content.excerpt}
-                                            </span>
-                                            <span className="hidden sm:block">{content.excerpt}</span>
-                                        </div>
-                                        <div className="flex gap-1 mt-2">
-                                            {tags.slice(0, 3).map((tag) => (
-                                                <Badge key={tag} variant="outline" className="text-xs">
-                                                    {tag}
-                                                </Badge>
-                                            ))}
-                                            {tags.length > 3 && (
-                                                <Badge variant="outline" className="text-xs">
-                                                    +{tags.length - 3}
-                                                </Badge>
-                                            )}
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="py-3 px-4 whitespace-nowrap">
-                                    <Badge variant={getStatusBadgeVariant(status)}>{getStatusText(status)}</Badge>
-                                </td>
-                                <td className="py-3 px-4 whitespace-nowrap">
-                                    <Badge variant="secondary">{categories || '-'}</Badge>
-                                </td>
-                                <td className="py-3 px-4 text-sm whitespace-nowrap">{author || '-'}</td>
-                                <td className="py-3 px-4 text-sm whitespace-nowrap">
-                                    {formatDate(publishedAt) || '-'}
-                                </td>
-                                <td className="py-3 px-4 text-sm whitespace-nowrap">{formatDate(updatedAt) || '-'}</td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
+                    return (
+                        <article
+                            key={content.slug}
+                            className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-3 rounded-lg border border-slate-100 bg-white p-3 transition-colors hover:bg-slate-50/80 sm:p-4"
+                        >
+                            <Link href={`/contents/${content.slug}/edit`} className="min-w-0">
+                                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                                    <h2 className="min-w-0 truncate text-base font-extrabold text-slate-800">
+                                        {title}
+                                    </h2>
+                                    <Badge variant={getStatusBadgeVariant(status)} className="shrink-0">
+                                        {getStatusText(status)}
+                                    </Badge>
+                                </div>
+                                <p className="mt-2 line-clamp-2 max-w-full break-words text-sm leading-6 text-muted-foreground">
+                                    {excerpt || '説明文はありません'}
+                                </p>
+                                <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2 text-xs font-bold text-muted-foreground">
+                                    <span className="shrink-0">{formatDate(publishedAt)}</span>
+                                    <span className="hidden text-slate-300 sm:inline">/</span>
+                                    <span className="hidden shrink-0 sm:inline">更新 {formatDate(updatedAt)}</span>
+                                    {author && (
+                                        <>
+                                            <span className="hidden text-slate-300 sm:inline">/</span>
+                                            <span className="max-w-[140px] truncate">{author}</span>
+                                        </>
+                                    )}
+                                </div>
+                                <div className="mt-3 flex min-w-0 flex-wrap gap-1.5">
+                                    {categories.slice(0, 2).map((category) => (
+                                        <Badge key={category} variant="secondary" className="max-w-[140px] truncate">
+                                            {category}
+                                        </Badge>
+                                    ))}
+                                    {tags.slice(0, 3).map((tag) => (
+                                        <Badge key={tag} variant="outline" className="max-w-[140px] truncate text-xs">
+                                            {tag}
+                                        </Badge>
+                                    ))}
+                                    {tags.length > 3 && (
+                                        <Badge variant="outline" className="text-xs">
+                                            +{tags.length - 3}
+                                        </Badge>
+                                    )}
+                                </div>
+                            </Link>
+                            <div className="flex items-start justify-end">
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    disabled={isPending}
+                                    onClick={() => handleDelete(content.slug, content.directory)}
+                                    className="size-9 rounded-full border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                                    aria-label={`${title}を削除`}
+                                >
+                                    <Trash2 className="size-4" />
+                                </Button>
+                            </div>
+                        </article>
+                    );
+                })}
+            </div>
             {contents.length === 0 && (
                 <div className="text-center py-8">
                     <p className="text-muted-foreground">記事が見つかりませんでした</p>
