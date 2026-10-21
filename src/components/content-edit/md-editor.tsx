@@ -6,6 +6,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import { EditorView } from '@codemirror/view';
+import rehypeSanitize from 'rehype-sanitize';
 
 // SSR対策で dynamic import
 const MarkdownPreview = dynamic(() => import('@uiw/react-markdown-preview'), {
@@ -246,6 +247,7 @@ const MdEditor = ({
                     >
                         <MarkdownPreview
                             source={value}
+                            rehypePlugins={[rehypeSanitize]}
                             className="markdown-preview-custom"
                             style={{
                                 padding: '1rem'

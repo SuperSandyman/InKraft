@@ -151,7 +151,7 @@ export const getGitHubAccessToken = async (): Promise<string | undefined> => {
     const token = await betterAuthInstance.api.getAccessToken({
         headers: await headers(),
         body: {
-            providerId: 'github'
+            useAccountCookie: true
         }
     });
 

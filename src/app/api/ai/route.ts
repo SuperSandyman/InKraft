@@ -1,15 +1,12 @@
 import { NextRequest } from 'next/server';
 
-import { createVertex } from '@ai-sdk/google-vertex';
-import { createOpenAI } from '@ai-sdk/openai';
 import { streamText } from 'ai';
 import { auth } from '@/auth';
+import { getTemplateModel } from '@/lib/ai-provider';
 import { isUserAllowed } from '@/lib/allowed-users';
 import { checkRateLimit } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
-
-const aiProvider = process.env.AI_PROVIDER || process.env.CONTENT_TEMPLATE_AI_PROVIDER || 'google-vertex';
 
 // 記事テンプレ生成用プロンプト
 const templatePrompt = `
@@ -26,33 +23,6 @@ const templatePrompt = `
   ...
 - 文章量は全体で1000文字程度を目安にしてください。
 `;
-
-const getTemplateModel = () => {
-    if (aiProvider === 'openai') {
-        if (!process.env.OPENAI_API_KEY) {
-            throw new Error('OPENAI_API_KEY is required when AI_PROVIDER=openai');
-        }
-        const openai = createOpenAI({
-            apiKey: process.env.OPENAI_API_KEY
-        });
-        return openai(process.env.OPENAI_MODEL || 'gpt-4.1-mini');
-    }
-
-    if (aiProvider === 'google-vertex') {
-        if (!process.env.GOOGLE_CREDENTIALS_JSON) {
-            throw new Error('GOOGLE_CREDENTIALS_JSON is required when AI_PROVIDER=google-vertex');
-        }
-        const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
-        const vertex = createVertex({
-            project: process.env.GOOGLE_VERTEX_PROJECT_ID,
-            location: process.env.GOOGLE_VERTEX_LOCATION,
-            googleAuthOptions: { credentials }
-        });
-        return vertex(process.env.GOOGLE_VERTEX_MODEL || 'gemini-2.5-flash');
-    }
-
-    throw new Error(`Unsupported AI_PROVIDER: ${aiProvider}`);
-};
 
 export async function POST(req: NextRequest) {
     try {
@@ -73,7 +43,19 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        const { theme } = await req.json();
+        const contentLength = Number(req.headers.get('content-length') ?? '0');
+        if (!Number.isFinite(contentLength) || contentLength > 10_000) {
+            return new Response(JSON.stringify({ error: 'リクエストが大きすぎます。' }), { status: 413 });
+        }
+
+        let body: unknown;
+        try {
+            body = await req.json();
+        } catch {
+            return new Response(JSON.stringify({ error: 'JSON形式が不正です。' }), { status: 400 });
+        }
+
+        const theme = typeof body === 'object' && body !== null && 'theme' in body ? body.theme : undefined;
         if (!theme || typeof theme !== 'string') {
             return new Response(JSON.stringify({ error: 'テーマを指定してください。' }), { status: 400 });
         }
