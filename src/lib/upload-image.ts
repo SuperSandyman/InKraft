@@ -20,7 +20,16 @@ export interface UploadImageResult {
     commitSha: string;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+export const MAX_IMAGE_FILE_SIZE = 10 * 1024 * 1024;
+
+const MAX_FILE_SIZE = MAX_IMAGE_FILE_SIZE;
+
+export class ImageUploadValidationError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'ImageUploadValidationError';
+    }
+}
 
 const ALLOWED_MIME_TYPES: Record<string, string[]> = {
     'image/jpeg': ['jpg', 'jpeg'],
@@ -85,33 +94,33 @@ export const uploadImageToGitHub = async (params: UploadImageParams): Promise<Up
 
     // バリデーション
     if (!directory || !slug) {
-        throw new Error('directory/slugが未設定です');
+        throw new ImageUploadValidationError('directory/slugが未設定です');
     }
     if (!SLUG_PATTERN.test(slug)) {
-        throw new Error('slug形式が不正です');
+        throw new ImageUploadValidationError('slug形式が不正です');
     }
 
     const contentTypes = await getAllContentTypes();
     const allowedDirectories = new Set(contentTypes.map((contentType) => contentType.directory));
     if (!allowedDirectories.has(directory)) {
-        throw new Error('directoryが許可されていません');
+        throw new ImageUploadValidationError('directoryが許可されていません');
     }
 
     // ファイルサイズ制限（10MB）
     if (file.buffer.length === 0) {
-        throw new Error('空のファイルはアップロードできません');
+        throw new ImageUploadValidationError('空のファイルはアップロードできません');
     }
     if (file.buffer.length > MAX_FILE_SIZE) {
-        throw new Error(`ファイルサイズが制限（${MAX_FILE_SIZE / 1024 / 1024}MB）を超えています`);
+        throw new ImageUploadValidationError(`ファイルサイズが制限（${MAX_FILE_SIZE / 1024 / 1024}MB）を超えています`);
     }
 
     const allowedExtensions = ALLOWED_MIME_TYPES[file.type];
     if (!allowedExtensions) {
-        throw new Error('サポートされていない画像形式です（JPEG、PNG、GIF、WebPのみ対応）');
+        throw new ImageUploadValidationError('サポートされていない画像形式です（JPEG、PNG、GIF、WebPのみ対応）');
     }
     const detectedExtension = detectImageExtension(file.buffer);
     if (!detectedExtension || !allowedExtensions.includes(detectedExtension)) {
-        throw new Error('ファイル内容と画像形式が一致しません');
+        throw new ImageUploadValidationError('ファイル内容と画像形式が一致しません');
     }
 
     // base64エンコード

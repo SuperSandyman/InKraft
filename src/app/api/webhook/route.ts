@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHmac, timingSafeEqual } from 'crypto';
 
-import { getWebhookConfig, createWebhookPayload, shouldProcessEvent, validateWebhookConfig } from '@/lib/webhook';
+import {
+    createWebhookPayload,
+    getWebhookConfig,
+    shouldProcessEvent,
+    validateWebhookConfig
+} from '@/lib/webhook';
+import { isSafeWebhookUrl } from '@/lib/webhook-url';
 import type { WebhookEndpoint, GitHubCommit } from '@/lib/webhook';
 
 interface GitHubRepository {
@@ -51,11 +57,14 @@ const triggerExternalWebhooks = async (eventType: string, payload: GitHubWebhook
         ref: payload.ref,
         commits: payload.commits
     });
-    const filteredEndpoints = config.endpoints.filter((endpoint) => shouldProcessEvent(eventType, endpoint));
+    const filteredEndpoints = config.endpoints.filter(
+        (endpoint) => isSafeWebhookUrl(endpoint.url) && shouldProcessEvent(eventType, endpoint)
+    );
     const promises = filteredEndpoints.map(async (endpoint: WebhookEndpoint) => {
         try {
             const response = await fetch(endpoint.url, {
                 method: 'POST',
+                redirect: 'error',
                 headers: {
                     'Content-Type': 'application/json',
                     'User-Agent': 'InKraft-Webhook/1.0'
@@ -83,6 +92,11 @@ export async function POST(req: NextRequest) {
         if (configErrors.length > 0) {
             return NextResponse.json({ errors: configErrors }, { status: 400 });
         }
+        const contentLength = Number(req.headers.get('content-length') ?? '0');
+        if (!Number.isFinite(contentLength) || contentLength > 5 * 1024 * 1024) {
+            return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
+        }
+
         const body = await req.text();
         const signature = req.headers.get('x-hub-signature-256');
         const githubEvent = req.headers.get('x-github-event');

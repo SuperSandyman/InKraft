@@ -6,6 +6,7 @@ import type { Octokit } from '@octokit/rest';
 import { z } from 'zod';
 
 import { getOctokitWithAuth } from './github-api';
+import { isSafeRepositoryPathSegment } from './content-path';
 
 interface WebhookEndpoint {
     name: string;
@@ -283,6 +284,10 @@ export const fetchContentBySlug = async (
     content: string;
     directory: string;
 } | null> => {
+    if (!isSafeRepositoryPathSegment(slug)) {
+        return null;
+    }
+
     const config = await getCmsConfig();
     const [owner, repo] = config.targetRepository.split('/');
     const branch = config.branch || 'main';
